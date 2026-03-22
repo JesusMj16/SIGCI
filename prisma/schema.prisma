@@ -1,0 +1,383 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+/* Enums  : Para evitar estados inconsistentes y diferencias en el tipo de datos
+    @map  : nombre real del valor en la BD
+    @@map : nombre real del tipo enum en la BD
+    Separa la logica de la app  con la de la BD
+*/
+
+
+enum UserRole {
+  ALUMNO              @map("alumno")
+  PROFESOR            @map("profesor")
+  ADMIN               @map("admin")
+  COORDINADOR         @map("coordinador")
+  PERSONAL_OPERATIVO  @map("personal_operativo")
+  BIBLIOTECA          @map("biblioteca")
+  SERVICIOS_ESCOLARES @map("servicios_escolares")
+  DIRECTOR            @map("director")
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  ACTIVO     @map("activo")
+  INACTIVO   @map("inactivo")
+  SUSPENDIDO @map("suspendido")
+
+  @@map("user_status")
+}
+
+enum AssignmentType {
+  TAREA    @map("tarea")
+  EXAMEN   @map("examen")
+  PROYECTO @map("proyecto")
+
+  @@map("assignment_type")
+}
+
+enum AssignmentStatus {
+  BORRADOR  @map("borrador")
+  PUBLICADO @map("publicado")
+  CERRADO   @map("cerrado")
+
+  @@map("assignment_status")
+}
+
+enum SubmissionStatus {
+  PENDIENTE  @map("pendiente")
+  ENTREGADO  @map("entregado")
+  CALIFICADO @map("calificado")
+
+  @@map("submission_status")
+}
+
+enum AnnouncementStatus {
+  ACTIVO   @map("activo")
+  EXPIRADO @map("expirado")
+
+  @@map("announcement_status")
+}
+
+// Enum nuevo: tipo de evento registrado en el log de acceso QR
+enum AccessLogType {
+  ENTRADA @map("entrada")
+  SALIDA  @map("salida")
+
+  @@map("access_log_type")
+}
+
+// Enum nuevo: estado del prestamo de material de biblioteca
+enum LoanStatus {
+  ACTIVO   @map("activo")
+  DEVUELTO @map("devuelto")
+  VENCIDO  @map("vencido")
+
+  @@map("loan_status")
+}
+
+// Enum nuevo: tipo de tramite en servicios escolares
+enum ProcedureType {
+  CONSTANCIA    @map("constancia")
+  HISTORIAL     @map("historial")
+  BAJA          @map("baja")
+  REINSCRIPCION @map("reinscripcion")
+  CERTIFICADO   @map("certificado")
+  OTRO          @map("otro")
+
+  @@map("procedure_type")
+}
+
+// Enum nuevo: estado del tramite
+enum ProcedureStatus {
+  PENDIENTE  @map("pendiente")
+  EN_PROCESO @map("en_proceso")
+  APROBADO   @map("aprobado")
+  RECHAZADO  @map("rechazado")
+  COMPLETADO @map("completado")
+
+  @@map("procedure_status")
+}
+
+/*  Models:          Declaracion de modelos que seran usados a lo largo de la implementación en la base de datos.
+
+  - user       :    Tabla central, schema para cada usuario
+  - Credential :    Modelo utilizado para la implementacion de Credenciales QR 1:1 con usuario
+  - Subject    :    Materias para el alumno
+  - Period     :    Periodos cursados para el alumno
+  - Group      :    Grupos de clase 
+  - Enrollment :    Inscripcion del alumno y grupo
+  - Assignment :    Tarea/Examenes creadors por el profesor 
+  - Submisiion :    Entrega de pendientes del Alumno
+  - Grade      :    Calificaciones
+  - Announcement :  Avisos
+  - Notification :  Notificaciones que enviara el sistema
+  - AccesLog   :    Registor de accesos con QR
+  - Loan       :    Prestamos de material
+  - Procedure  :    Tramites en linea 
+*/
+
+model User {
+  id           String     @id @default(cuid()) @map("user_id")
+  matricula    String     @unique @db.VarChar(25)
+  nombre       String     @db.VarChar(256)
+  apellidos    String     @db.VarChar(256)
+  email        String     @unique @db.VarChar(256)
+  passwordHash String     @map("password_hash")
+  carrera      String     @db.VarChar(256)
+  role         UserRole
+  status       UserStatus @default(ACTIVO)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relaciones declaradas aqui para que Prisma genere los tipos correctos
+  credential    Credential?
+  groups        Group[]
+  enrollments   Enrollment[]
+  submissions   Submission[]
+  grades        Grade[]
+  announcements Announcement[]
+  notifications Notification[]
+  accessLogs    AccessLog[]
+  loans         Loan[]
+  procedures    Procedure[]
+
+  
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+
+model Credential {
+  id        String    @id @default(cuid()) @map("credential_id")
+  userId    String    @unique @map("user_id")
+  qrData    String    @map("qr_data")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime? @map("expires_at")
+
+  /*Relacion 1:1 con usuario*/
+  user       User        @relation(fields: [userId], references: [id])
+  accessLogs AccessLog[]
+
+  @@map("credentials")
+}
+
+model Subject {
+  id       String @id @default(cuid()) @map("subject_id")
+  nombre   String @db.VarChar(256)
+  codigo   String @unique @db.VarChar(20) 
+  creditos Int
+
+  /*Relacion 1 a n grupso */
+  groups Group[]
+
+  @@map("subjects")
+}
+
+
+
+model Period {
+  id        String   @id @default(cuid()) @map("period_id")
+  nombre    String   @db.VarChar(100)
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  isActive  Boolean  @default(false) @map("is_active")
+
+  groups Group[]
+
+  @@map("periods")
+}
+
+
+model Group {
+  id        String @id @default(cuid()) @map("group_id")
+  subjectId String @map("subject_id")
+  teacherId String @map("teacher_id")
+  periodId  String @map("period_id")
+  nombre    String @db.VarChar(100) 
+
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  teacher     User         @relation(fields: [teacherId], references: [id])
+  period      Period       @relation(fields: [periodId], references: [id])
+  enrollments Enrollment[]
+  assignments Assignment[]
+
+  // Consulta frecuente: grupos del periodo X con materia Y
+  @@index([periodId, subjectId])
+  @@index([teacherId])
+  @@map("groups")
+}
+
+
+
+model Enrollment {
+  id        String   @id @default(cuid()) @map("enrollment_id")
+  studentId String   @map("student_id")
+  groupId   String   @map("group_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student User  @relation(fields: [studentId], references: [id])
+  group   Group @relation(fields: [groupId], references: [id])
+
+  @@unique([studentId, groupId]) /*Evitamos inscripciones duplicadas*/
+  @@map("enrollments")
+}
+
+
+model Assignment {
+  id            String           @id @default(cuid()) @map("assignment_id")
+  groupId       String           @map("group_id")
+  titulo        String           @db.VarChar(256)
+  instrucciones String?          @db.Text
+  tipo          AssignmentType
+  status        AssignmentStatus @default(BORRADOR)
+  fechaLimite   DateTime         @map("fecha_limite")
+  rubrica       String?          @db.Text
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  group       Group        @relation(fields: [groupId], references: [id])
+  submissions Submission[]
+
+  // Filtrado tipico: tareas publicadas de un grupo / tareas proximas a vencer
+  @@index([groupId, status])
+  @@index([fechaLimite])
+  @@map("assignments")
+}
+
+
+
+model Submission {
+  id           String           @id @default(cuid()) @map("submission_id")
+  assignmentId String           @map("assignment_id")
+  studentId    String           @map("student_id")
+  status       SubmissionStatus @default(PENDIENTE)
+  fileUrl      String?          @map("file_url") @db.VarChar(1024)
+  intento      Int              @default(1)
+  submittedAt  DateTime?        @map("submitted_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+  grade      Grade?
+
+  @@unique([assignmentId, studentId, intento]) /*Evitar entregas duplicadas*/
+  @@index([studentId])
+  @@map("submissions")
+}
+
+
+model Grade {
+  id                String   @id @default(cuid()) @map("grade_id")
+  submissionId      String   @unique @map("submission_id")
+  studentId         String   @map("student_id")
+  valor             Decimal  @db.Decimal(5, 2)
+  retroalimentacion String?  @db.Text @map("retroalimentacion")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  /*Relaciones 1:1 con Submission y User */
+  submission Submission @relation(fields: [submissionId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@map("grades")
+}
+
+
+model Announcement {
+  id        String             @id @default(cuid()) @map("announcement_id")
+  titulo    String             @db.VarChar(256)
+  cuerpo    String             @db.Text
+  autorId   String             @map("autor_id")
+  status    AnnouncementStatus @default(ACTIVO)
+  segmento  UserRole?
+  expiresAt DateTime?          @map("expires_at")
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  autor User @relation(fields: [autorId], references: [id])
+
+  
+  @@index([status, createdAt])
+  @@index([segmento])
+  @@map("announcements")
+}
+
+
+model Notification {
+  id        String   @id @default(cuid()) @map("notification_id")
+  userId    String   @map("user_id")
+  titulo    String   @db.VarChar(256)
+  mensaje   String   @db.Text
+  leida     Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, leida])
+  @@map("notifications")
+}
+
+
+model AccessLog {
+  id           String        @id @default(cuid()) @map("access_log_id")
+  userId       String        @map("user_id")
+  credentialId String        @map("credential_id")
+  tipo         AccessLogType
+  timestamp    DateTime      @default(now())
+
+  user       User       @relation(fields: [userId], references: [id])
+  credential Credential @relation(fields: [credentialId], references: [id])
+
+  // Busquedas por usuario en rango de tiempo 
+  @@index([userId, timestamp])
+  @@map("access_logs")
+}
+
+
+model Loan {
+  id           String     @id @default(cuid()) @map("loan_id")
+  userId       String     @map("user_id")
+  descripcion  String     @db.VarChar(512)
+  status       LoanStatus @default(ACTIVO)
+  prestadoAt   DateTime   @default(now()) @map("prestado_at")
+  devolucionAt DateTime?  @map("devolucion_at")
+  multa        Decimal?   @db.Decimal(8, 2)
+
+  user User @relation(fields: [userId], references: [id])
+
+  // Prestamos activos de un usuario 
+  @@index([userId, status])
+  @@map("loans")
+}
+
+
+model Procedure {
+  id          String          @id @default(cuid()) @map("procedure_id")
+  userId      String          @map("user_id")
+  tipo        ProcedureType
+  status      ProcedureStatus @default(PENDIENTE)
+  descripcion String?         @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  // Filtrado por alumno + estado y por tipo + estado 
+  @@index([userId, status])
+  @@index([tipo, status])
+  @@map("procedures")
+}
