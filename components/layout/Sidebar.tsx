@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getNavForRole } from "@/lib/nav";
+import { getNavForRole } from "@/lib/config/nav";
 import { SidebarNav } from "./SidebarNav";
 
 export async function Sidebar() {

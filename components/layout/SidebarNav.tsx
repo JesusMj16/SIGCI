@@ -6,9 +6,9 @@ import { clsx } from "clsx";
 import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import { signOut } from "next-auth/react";
 import { SheetClose } from "@/components/ui/sheet";
-import type { NavItem } from "@/lib/nav";
+import type { NavItem } from "@/lib/config/nav";
 import type { UserRole } from "@/lib/generated/prisma/enums";
-import { ROLE_LABEL, initialsOf } from "@/lib/user-display";
+import { ROLE_LABEL, initialsOf } from "@/lib/presentation/user-display";
 
 export type SidebarUser = {
   name: string;
