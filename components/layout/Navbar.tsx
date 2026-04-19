@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BellAlertIcon } from "@heroicons/react/24/outline";
-import { buildBreadcrumbs } from "@/lib/breadcrumbs";
-import { firstName } from "@/lib/user-display";
+import { buildBreadcrumbs } from "@/lib/config/breadcrumbs";
+import { firstName } from "@/lib/presentation/user-display";
 import type { SidebarUser } from "./SidebarNav";
 
 type NavbarProps = {

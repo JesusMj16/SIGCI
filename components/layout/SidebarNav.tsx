@@ -9,6 +9,7 @@ import { SheetClose } from "@/components/ui/sheet";
 import type { NavItem } from "@/lib/config/nav";
 import type { UserRole } from "@/lib/generated/prisma/enums";
 import { ROLE_LABEL, initialsOf } from "@/lib/presentation/user-display";
+import { NavIcon } from "./NavIcon";
 
 export type SidebarUser = {
   name: string;
@@ -58,7 +59,7 @@ export function SidebarNav({
       )}
 
       <ul className="flex flex-1 flex-col gap-1">
-        {items.map(({ label, href, icon: Icon }) => {
+        {items.map(({ label, href, iconKey }) => {
           const active = isActive(href);
           const link = (
             <Link
@@ -78,7 +79,8 @@ export function SidebarNav({
                   className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary"
                 />
               )}
-              <Icon
+              <NavIcon
+                iconKey={iconKey}
                 className={clsx(
                   "h-5 w-5 shrink-0 transition",
                   active

@@ -16,10 +16,10 @@ export function DashboardHero({
   aside,
 }: DashboardHeroProps) {
   return (
-    <section className="flex flex-col gap-8 rounded-3xl bg-card p-6 md:flex-row md:items-end md:justify-between md:gap-10 md:p-10">
+    <section className="flex flex-col gap-8 rounded-3xl bg-card p-6 md:flex-col md:items-stretch md:justify-between md:gap-10 md:p-10">
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         {eyebrow && (
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-xs bg-amber-100 max-w-40 p-2 text-center rounded-2xl font-medium uppercase tracking-wider text-muted-foreground">
             {eyebrow}
           </p>
         )}
@@ -39,7 +39,7 @@ export function DashboardHero({
       </div>
 
       {aside && (
-        <div className="w-full shrink-0 md:w-auto md:min-w-[18rem]">
+        <div className="w-full min-w-fit shrink-0 md:w-auto md:min-w-[18rem]">
           {aside}
         </div>
       )}

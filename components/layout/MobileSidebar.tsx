@@ -9,7 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SidebarNav, type SidebarUser } from "./SidebarNav";
-import type { NavItem } from "@/lib/nav";
+import type { NavItem } from "@/lib/config/nav";
 
 type MobileSidebarProps = {
   items: NavItem[];
