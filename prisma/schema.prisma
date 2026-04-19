@@ -27,6 +27,8 @@ enum UserRole {
   BIBLIOTECA          @map("biblioteca")
   SERVICIOS_ESCOLARES @map("servicios_escolares")
   DIRECTOR            @map("director")
+  TECNICO             @map("tecnico")
+  JEFE_CARRERA        @map("jefe_carrera")
 
   @@map("user_role")
 }
@@ -135,13 +137,15 @@ model User {
   apellidos    String     @db.VarChar(256)
   email        String     @unique @db.VarChar(256)
   passwordHash String     @map("password_hash")
-  carrera      String     @db.VarChar(256)
+  carrera      String     @db.VarChar(256)       // @deprecated — usar carreraRel; se mantiene para migración de datos
+  carreraId    String?    @map("carrera_id")
   role         UserRole
   status       UserStatus @default(ACTIVO)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
   // Relaciones declaradas aqui para que Prisma genere los tipos correctos
+  carreraRel    Carrera?    @relation(fields: [carreraId], references: [id])
   credential    Credential?
   groups        Group[]
   enrollments   Enrollment[]
@@ -173,6 +177,17 @@ model Credential {
   accessLogs AccessLog[]
 
   @@map("credentials")
+}
+
+model Carrera {
+  id        String @id @default(cuid()) @map("carrera_id")
+  nombre    String @unique @db.VarChar(256)
+  codigo    String @unique @db.VarChar(20)
+  activa    Boolean @default(true)
+
+  users User[]
+
+  @@map("carreras")
 }
 
 model Subject {
@@ -207,7 +222,8 @@ model Group {
   subjectId String @map("subject_id")
   teacherId String @map("teacher_id")
   periodId  String @map("period_id")
-  nombre    String @db.VarChar(100) 
+  nombre    String @db.VarChar(100)
+  cupo      Int    @default(30)     // D3: capacidad máxima de alumnos
 
   subject     Subject      @relation(fields: [subjectId], references: [id])
   teacher     User         @relation(fields: [teacherId], references: [id])
