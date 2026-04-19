@@ -4,7 +4,7 @@ import { cache } from "react";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { getAuthenticatedUser } from "@/lib/dal/session";
-import { ok, err, type Result } from "@/lib/result";
+import { ok, err, type Result } from "@/lib/contracts/result";
 
 /** ADMIN/COORDINADOR: inscribe un ALUMNO en un grupo existente. */
 export async function inscribirAlumno(input: {

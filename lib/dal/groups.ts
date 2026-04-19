@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { getAuthenticatedUser } from "@/lib/dal/session";
-import { ok, err, type Result } from "@/lib/result";
+import { ok, err, type Result } from "@/lib/contracts/result";
 
 export type CrearGrupoInput = {
   subjectId: string;

@@ -1,4 +1,4 @@
-import type { UserRole } from "./generated/prisma/enums";
+import type { UserRole } from "../generated/prisma/enums";
 
 export const ROLE_LABEL: Record<UserRole, string> = {
   ALUMNO: "Alumno",
@@ -9,6 +9,8 @@ export const ROLE_LABEL: Record<UserRole, string> = {
   SERVICIOS_ESCOLARES: "Servicios Escolares",
   DIRECTOR: "Dirección",
   PERSONAL_OPERATIVO: "Operaciones",
+  TECNICO: "Técnico",
+  JEFE_CARRERA: "Jefe de Carrera",
 };
 
 export function initialsOf(name: string): string {
