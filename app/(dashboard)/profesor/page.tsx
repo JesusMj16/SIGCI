@@ -22,28 +22,29 @@ export default async function ProfesorDashboard() {
         subtitle="Tus grupos y entregas por calificar de un vistazo."
         meta={<span>Rol · Profesor</span>}
         aside={
+          <div className="flex gap-10 justify-center">
           <Link
             href="/profesor/calificar"
-            className="flex items-center justify-between gap-4 rounded-2xl bg-secondary/10 p-6 transition hover:bg-secondary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+            className="flex max-w-40 max-h-15 text-center items-center rounded-2xl p-4 bg-secondary/10  transition hover:bg-secondary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
           >
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Acción rápida
-              </p>
-              <p className="mt-2 font-heading text-lg font-semibold text-secondary">
+              <p className="font-heading text-lg font-semibold text-secondary">
                 Calificar pendientes
               </p>
-            </div>
-            <ArrowRightIcon
-              className="h-5 w-5 text-secondary"
-              aria-hidden="true"
-            />
           </Link>
+          <Link
+            href="/profesor/perfil"
+            className="flex w-40 max-w-40 max-h-15 text-center justify-center items-center rounded-2xl bg-primary p-4 transition hover:bg-primary/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+          >
+              <p className=" font-heading text-lg font-semibold text-white">
+                Ver Perfil
+              </p>
+          </Link>
+          </div>
         }
       />
 
-      <section className="grid gap-6 sm:grid-cols-2">
-        <StatCard
+      <section className="grid gap-4 sm:grid-cols-2">
+          <StatCard
           titulo="Grupos activos"
           valor={stats.grupos}
           icon={UserGroupIcon}
@@ -60,6 +61,7 @@ export default async function ProfesorDashboard() {
               : "Todo al día."
           }
         />
+        
       </section>
 
       <SectionCard

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { getNavForRole } from "@/lib/nav";
+import { getNavForRole } from "@/lib/config/nav";
 import { SidebarNav } from "@/components/layout/SidebarNav";
 import { MobileSidebar } from "@/components/layout/MobileSidebar";
 import { Navbar } from "@/components/layout/Navbar";

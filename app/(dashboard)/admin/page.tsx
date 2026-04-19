@@ -6,7 +6,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { auth } from "@/auth";
 import { getAdminStats } from "@/lib/dal/stats/admin";
-import { ADMIN_QUICK_LINKS } from "@/lib/admin-links";
+import { ADMIN_QUICK_LINKS } from "@/lib/config/admin-links";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { SectionCard } from "@/components/dashboard/SectionCard";

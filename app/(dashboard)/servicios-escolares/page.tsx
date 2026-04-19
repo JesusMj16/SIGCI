@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@heroicons/react/24/outline";
 import { getServiciosEscolaresStats } from "@/lib/dal/stats/servicios-escolares";
-import { labelForProcedureType } from "@/lib/procedure-labels";
+import { labelForProcedureType } from "@/lib/presentation/procedure-labels";
 import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { SectionCard } from "@/components/dashboard/SectionCard";
 
