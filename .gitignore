@@ -41,3 +41,15 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+docs/Avances-Planeacion/Segundo_Avance_del_Proyecto.md
+docs/Avances-Planeacion/Segundo_Parcial_Proyecto-1.pdf
+docs/Diagramas/Casos de uso/Administrador de sistema.png
+docs/Plan-Convergencia/01-matriz-trazabilidad-casos-de-uso.md
+docs/Plan-Convergencia/03-acta-decisiones-D1-D2-D3.md
+docs/Plan-Convergencia/02-matriz-trazabilidad-actividades.md
+.gitignore
+docs/Plan-Convergencia/07-claude-design-contexto.md
+docs/Plan-Convergencia/05-modelo-dominio-v2-alineado-implementacion.md
+.gitignore
+docs/Plan-Convergencia/GUIA-IMPLEMENTACION-CU-DETALLADA.md
