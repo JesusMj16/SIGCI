@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type DashboardHeroProps = {
   eyebrow?: string;
@@ -8,6 +9,15 @@ type DashboardHeroProps = {
   aside?: ReactNode;
 };
 
+/**
+ * Hero editorial reutilizable.
+ *
+ * - Sin `aside`: layout en columna (texto ocupa ancho completo).
+ * - Con `aside`: layout asimetrico en `md+` (texto a la izquierda, slot
+ *   lateral a la derecha con `min-w-[18rem]`).
+ * - Eyebrow estilizado como chip tokenizado (`bg-primary/10 text-primary`),
+ *   evitando colores ajenos al sistema (antes: `bg-amber-100`).
+ */
 export function DashboardHero({
   eyebrow,
   title,
@@ -16,12 +26,17 @@ export function DashboardHero({
   aside,
 }: DashboardHeroProps) {
   return (
-    <section className="flex flex-col gap-8 rounded-3xl bg-card p-6 md:flex-col md:items-stretch md:justify-between md:gap-10 md:p-10">
+    <section
+      className={cn(
+        "flex flex-col gap-8 rounded-3xl bg-card p-6 md:p-10",
+        aside && "md:flex-row md:items-stretch md:justify-between md:gap-10"
+      )}
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         {eyebrow && (
-          <p className="text-xs bg-amber-100 max-w-40 p-2 text-center rounded-2xl font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="inline-flex w-fit items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary">
             {eyebrow}
-          </p>
+          </span>
         )}
         <h1 className="font-heading text-3xl font-bold tracking-tight text-primary md:text-4xl">
           {title}
