@@ -41,6 +41,14 @@ export const proxy = auth((req) => {
         return "/profesor";
       case UserRole.ALUMNO:
         return "/alumno";
+      case UserRole.DIRECTOR:
+        return "/director";
+      case UserRole.PERSONAL_OPERATIVO:
+        return "/personal-operativo";
+      case UserRole.TECNICO:
+        return "/tecnico";
+      case UserRole.JEFE_CARRERA:
+        return "/jefe-carrera";
       default:
         return "/";
     }
@@ -72,6 +80,34 @@ export const proxy = auth((req) => {
   // Se restringe el acceso a las rutas /servicios-escolares/** exclusivamente para servicios escolares
   if (pathname.startsWith("/servicios-escolares")) {
     if (userRole !== UserRole.SERVICIOS_ESCOLARES) {
+      return NextResponse.redirect(new URL(getDashboardUrl(userRole), nextUrl));
+    }
+  }
+
+  // Se restringe el acceso a las rutas /director/** exclusivamente para dirección
+  if (pathname.startsWith("/director")) {
+    if (userRole !== UserRole.DIRECTOR) {
+      return NextResponse.redirect(new URL(getDashboardUrl(userRole), nextUrl));
+    }
+  }
+
+  // Se restringe el acceso a las rutas /personal-operativo/** exclusivamente para personal operativo
+  if (pathname.startsWith("/personal-operativo")) {
+    if (userRole !== UserRole.PERSONAL_OPERATIVO) {
+      return NextResponse.redirect(new URL(getDashboardUrl(userRole), nextUrl));
+    }
+  }
+
+  // Se restringe el acceso a las rutas /tecnico/** exclusivamente para técnicos
+  if (pathname.startsWith("/tecnico")) {
+    if (userRole !== UserRole.TECNICO) {
+      return NextResponse.redirect(new URL(getDashboardUrl(userRole), nextUrl));
+    }
+  }
+
+  // Se restringe el acceso a las rutas /jefe-carrera/** exclusivamente para jefes de carrera
+  if (pathname.startsWith("/jefe-carrera")) {
+    if (userRole !== UserRole.JEFE_CARRERA) {
       return NextResponse.redirect(new URL(getDashboardUrl(userRole), nextUrl));
     }
   }
