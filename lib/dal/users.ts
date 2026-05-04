@@ -7,12 +7,25 @@ import { getAuthenticatedUser } from "@/lib/dal/session";
 import { ok, err, type Result } from "@/lib/contracts/result";
 import { generarQrData } from "@/lib/services/credential/qr";
 import { notifyUser } from "@/lib/services/audit/notify";
-import { UserRole } from "@/lib/generated/prisma/enums";
+import { validarCampos } from "@/lib/dal/users.validators";
+import type {
+  CrearUsuarioConCredencialInput,
+  CrearUsuarioConCredencialOutput,
+  UsuarioListadoDTO,
+  CredencialPropiaDTO,
+} from "@/lib/dal/users.types";
+
+export type {
+  CrearUsuarioConCredencialInput,
+  CrearUsuarioConCredencialOutput,
+  UsuarioListadoDTO,
+  CredencialPropiaDTO,
+};
 
 /**
- * CU-01 — Generar Credencial Digital (DAL).
+ * CU-01 — Generar Credencial Digital
  *
- * Flujo oficial (GUIA-IMPLEMENTACION-CU-DETALLADA.md §CU-01):
+ * Flujo oficial:
  *  1. ADMIN/COORDINADOR captura datos personales completos.
  *  2. Asigna rol.
  *  3. Confirma alta con estatus ACTIVO.
@@ -21,98 +34,7 @@ import { UserRole } from "@/lib/generated/prisma/enums";
  *  6. Sistema persiste el QR en BD vinculado al perfil (transacción atómica).
  *  7. Sistema confirma al administrador.
  *  8. El QR queda disponible en el perfil.
- *
- * Reglas:
- *  - Guard doble: getAuthenticatedUser(["ADMIN","COORDINADOR"]) al inicio.
- *  - Atomicidad: prisma.$transaction([user.create, credential.create]).
- *  - Unicidad 1:1: Credential.userId @unique evita duplicados concurrentes.
- *  - Contrato: Result<T> (nunca se lanza un error crudo a la UI).
  */
-
-export type CrearUsuarioConCredencialInput = {
-  matricula: string;
-  nombre: string;
-  apellidos: string;
-  email: string;
-  password: string;
-  carrera: string;
-  role: UserRole;
-};
-
-export type CrearUsuarioConCredencialOutput = {
-  userId: string;
-  credentialId: string;
-  qrData: string;
-};
-
-const REQUIRED_FIELDS: (keyof CrearUsuarioConCredencialInput)[] = [
-  "matricula",
-  "nombre",
-  "apellidos",
-  "email",
-  "password",
-  "carrera",
-  "role",
-];
-
-const ALLOWED_ROLES: ReadonlySet<UserRole> = new Set(
-  Object.values(UserRole) as UserRole[]
-);
-// RFC 5322 simplificado: suficiente para rechazar entradas obviamente inválidas
-// a nivel servidor. La unicidad sigue validada por BD.
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD = 8;
-
-type ValidacionError =
-  | { ok: false; code: "VALIDATION"; campo: string; mensaje: string }
-  | { ok: false; code: "INVALID_ROLE"; mensaje: string };
-
-function validarCampos(
-  input: CrearUsuarioConCredencialInput
-): { ok: true } | ValidacionError {
-  for (const campo of REQUIRED_FIELDS) {
-    const v = input[campo];
-    if (v === undefined || v === null || String(v).trim() === "") {
-      return {
-        ok: false,
-        code: "VALIDATION",
-        campo: String(campo),
-        mensaje: `Campo requerido faltante: ${String(campo)}`,
-      };
-    }
-  }
-
-  // Rol contra enum real generado por Prisma.
-  if (!ALLOWED_ROLES.has(input.role)) {
-    return {
-      ok: false,
-      code: "INVALID_ROLE",
-      mensaje: `Rol no permitido: ${String(input.role)}`,
-    };
-  }
-
-  // Email con forma mínima válida.
-  if (!EMAIL_RE.test(input.email.trim())) {
-    return {
-      ok: false,
-      code: "VALIDATION",
-      campo: "email",
-      mensaje: "Email con formato inválido",
-    };
-  }
-
-  // Contraseña: no confiar en required del cliente.
-  if (input.password.length < MIN_PASSWORD) {
-    return {
-      ok: false,
-      code: "VALIDATION",
-      campo: "password",
-      mensaje: `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres`,
-    };
-  }
-
-  return { ok: true };
-}
 
 function mapPrismaError(e: unknown): Result<never> {
   // Prisma known errors llegan como objetos con `code`.
@@ -145,16 +67,15 @@ function mapPrismaError(e: unknown): Result<never> {
 }
 
 /**
- * Paso 1-7 del flujo principal. Crea User + Credential en una misma
- * transacción; si cualquiera falla, ambos se revierten.
+ * Crea usuario con credencial en una misma transacción.
  */
 export async function crearUsuarioConCredencial(
   input: CrearUsuarioConCredencialInput
 ): Promise<Result<CrearUsuarioConCredencialOutput>> {
-  // Guard doble — doble check de sesión + rol.
+  //doble check de sesión + rol.
   const actor = await getAuthenticatedUser(["ADMIN", "COORDINADOR"]);
 
-  // Paso 4: validación de datos completos y rol asignado.
+  // validación de datos completos y rol asignado.
   const val = validarCampos(input);
   if (!val.ok) {
     return err(val.mensaje, val.code);
@@ -173,7 +94,7 @@ export async function crearUsuarioConCredencial(
   try {
     const passwordHash = await bcrypt.hash(input.password, 10);
 
-    // Paso 5 + 6: generación del QR y persistencia atómica.
+    // generación del QR y persistencia atómica.
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
@@ -281,21 +202,6 @@ export async function reactivarUsuarioYGenerarCredencial(
   }
 }
 
-/**
- * Lectura auxiliar para la lista de /admin/usuarios (solo ADMIN/COORDINADOR).
- * DTO plano, serializable.
- */
-export type UsuarioListadoDTO = {
-  id: string;
-  matricula: string;
-  nombre: string;
-  apellidos: string;
-  email: string;
-  role: UserRole;
-  status: string;
-  tieneCredencial: boolean;
-  credencialActiva: boolean;
-};
 
 export async function obtenerUsuariosAdmin(): Promise<
   Result<UsuarioListadoDTO[]>
@@ -335,19 +241,6 @@ export async function obtenerUsuariosAdmin(): Promise<
     return mapPrismaError(e);
   }
 }
-
-/**
- * Evidencia CU-01 paso 8: el QR quedó disponible vinculado al perfil.
- * Lectura restringida al propio usuario (sesión actual). Pensada para ser
- * consumida por la superficie futura /credencial (CU-02) sin implementarla
- * aquí. DTO plano, safe-for-client.
- */
-export type CredencialPropiaDTO = {
-  tieneCredencial: boolean;
-  credencialActiva: boolean;
-  qrData: string | null;
-  expiresAt: string | null;
-};
 
 export async function obtenerCredencialPropia(): Promise<
   Result<CredencialPropiaDTO>
