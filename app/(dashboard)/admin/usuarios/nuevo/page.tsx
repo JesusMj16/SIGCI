@@ -7,7 +7,6 @@ import { getAuthenticatedUser } from "@/lib/dal/session";
 import { NuevoUsuarioForm } from "./form";
 
 export default async function NuevoUsuarioPage() {
-  // Guard doble: además del proxy (/admin/**), la DAL volverá a verificar.
   await getAuthenticatedUser(["ADMIN", "COORDINADOR"]);
 
   return (
@@ -15,7 +14,7 @@ export default async function NuevoUsuarioPage() {
       <DashboardHero
         eyebrow="Nuevo usuario"
         title="Alta con credencial digital"
-        subtitle="Al confirmar, el sistema genera un QR único firmado (HMAC) y lo almacena en el perfil del usuario."
+        subtitle="Al confirmar, el sistema genera un QR único firmado y lo almacena en el perfil del usuario."
         aside={
           <Link
             href="/admin/usuarios"

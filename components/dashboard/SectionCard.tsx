@@ -14,10 +14,10 @@ export function SectionCard({
   children,
 }: SectionCardProps) {
   return (
-    <section className="rounded-2xl bg-secondary/10 p-6 md:p-8">
+    <section className="rounded-2xl bg-blue-200 shadow-lg p-6 md:p-8">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-3">
-          <h2 className="font-heading text-2xl font-semibold text-secondary">
+          <h2 className="font-heading text-2xl font-semibold text-primary">
             {title}
           </h2>
           {description && (
