@@ -16,25 +16,7 @@ import { signInAction, type LoginState } from "./actions";
 
 const initialState: LoginState = {};
 
-/**
- * Login (CU-00) — UI editorial split-screen.
- *
- * Decisiones:
- *  - Panel institucional a la izquierda (bg-primary) con identidad UTM/SIGCI,
- *    mensaje y acento decorativo; solo visible en `lg+`.
- *  - Formulario a la derecha con jerarquia: eyebrow + h1 + subtitulo.
- *  - Alert destructivo con icono + titulo + descripcion usando tokens de
- *    shadcn (evita hardcodear `bg-red-200`).
- *  - Toggle de contrasena con iconos de heroicons y `focus-visible` ring.
- *  - `autoFocus` en email para que el usuario tipee sin click adicional.
- *  - Sin dependencias nuevas.
- *
- * Performance:
- *  - `useActionState` conserva el handler de server action sin re-crear
- *    closures por render.
- *  - El unico estado cliente (`showPassword`) esta aislado a este componente;
- *    no hay arbol de hijos caros que se re-rendericen.
- */
+
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(signInAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
