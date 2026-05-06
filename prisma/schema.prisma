@@ -225,6 +225,11 @@ model Group {
   nombre    String @db.VarChar(100)
   cupo      Int    @default(30)     // D3: capacidad máxima de alumnos
 
+  day         Int          
+  startTime   String       
+  endTime     String       
+  classroom   String       
+
   subject     Subject      @relation(fields: [subjectId], references: [id])
   teacher     User         @relation(fields: [teacherId], references: [id])
   period      Period       @relation(fields: [periodId], references: [id])
