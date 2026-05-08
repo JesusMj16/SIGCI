@@ -36,6 +36,7 @@ export const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Cursos", href: "/alumno/cursos", iconKey: "book" },
     { label: "Calificaciones", href: "/alumno/calificaciones", iconKey: "academic" },
     { label: "Horario", href: "/alumno/horario", iconKey: "calendar" },
+    { label: "Historial", href: "/alumno/historial", iconKey: "chart" },
   ],
   PROFESOR: [
     ...commonNavItems,

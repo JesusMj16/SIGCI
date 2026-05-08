@@ -184,7 +184,7 @@ model Carrera {
   nombre    String @unique @db.VarChar(256)
   codigo    String @unique @db.VarChar(20)
   activa    Boolean @default(true)
-
+  creditosTotales Int?    @map("creditos_totales")
   users User[]
 
   @@map("carreras")
