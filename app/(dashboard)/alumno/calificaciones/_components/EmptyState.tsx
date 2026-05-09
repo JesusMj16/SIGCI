@@ -1,7 +1,7 @@
 /**
- * EmptyState.tsx — estados vacíos de CU-04
- * Prueba 4: sin materias inscritas
- * Prueba 5: sin calificaciones registradas
+ estados vacíos 
+  Prueba 4: sin materias inscritas
+ Prueba 5: sin calificaciones registradas
  */
 
 interface EmptyStateProps {
@@ -24,9 +24,9 @@ export function EmptyState({ tipo, mensaje }: EmptyStateProps) {
   );
 }
 
-/**
- * ErrorState.tsx — excepción de conexión DB
- * Prueba de excepción: error de conexión con la base de datos
+/*
+  excepción de conexión DB
+  Prueba de excepción error de conexión con la base de datos
  */
 interface ErrorStateProps {
   mensaje: string;

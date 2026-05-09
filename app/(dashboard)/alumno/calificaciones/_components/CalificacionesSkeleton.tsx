@@ -1,7 +1,6 @@
-/**
- * CalificacionesSkeleton.tsx
- * Skeleton de carga mientras el Server Component resuelve los datos.
- * Requerimiento especial: carga en menos de 5 segundos.
+/*
+  Skeleton de carga mientras el Server Component resuelve los datos.
+carga en menos de 5 segundos.
  */
 
 export function CalificacionesSkeleton() {

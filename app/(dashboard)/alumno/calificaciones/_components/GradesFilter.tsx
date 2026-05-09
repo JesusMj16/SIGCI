@@ -1,9 +1,8 @@
 "use client";
 
-/**
- * GradesFilter.tsx
- * Filtro por materia — Flujo alternativo CU-04.
- * Usa React useState en el padre; NO hace recarga de página.
+/*
+ Filtro por materia flujo alternativo 
+Usa React useState en el padre; NO hace recarga de página.
  */
 
 interface GradesFilterProps {

@@ -1,9 +1,7 @@
-/**
- * app/(dashboard)/alumno/calificaciones/page.tsx
- * CU-04 — ConsultarCalificaciones
- *
- * Server Component: carga datos en servidor, pasa al client container.
- * Protección de rol: getAuthenticatedUser(["ALUMNO"]) dentro del DAL.
+/*ConsultarCalificaciones
+ 
+  server Component carga datos en servidor, pasa al client container
+  protección de rol getAuthenticatedUser(["ALUMNO"]) dentro del DAL
  */
 
 import { Suspense } from "react";
@@ -24,7 +22,7 @@ export const metadata = {
 export default async function CalificacionesPage({ searchParams }: PageProps) {
   const { periodo } = await searchParams;
 
-  // Carga en paralelo: calificaciones + lista de periodos disponibles
+  // Carga en paralelo calificaciones + lista de periodos disponibles
   const [calificacionesResult, periodosResult] = await Promise.all([
     getCalificacionesAction(periodo),
     getPeriodosAlumnoAction(),

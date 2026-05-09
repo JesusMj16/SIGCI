@@ -1,10 +1,4 @@
-/**
- * calificaciones.css
- * Estilos para CU-04 — ConsultarCalificaciones
- * Requerimiento especial: tabla clara, responsiva para móviles.
- */
 
-/* ── Variables ─────────────────────────────────────────────────────────── */
 :root {
   --cal-bg: #f5f7fb;
   --cal-surface: #ffffff;
@@ -20,7 +14,7 @@
   --cal-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
 }
 
-/* ── Page layout ───────────────────────────────────────────────────────── */
+/*  Page layout  */
 .calificaciones-page {
   max-width: 960px;
   margin: 0 auto;
@@ -29,7 +23,7 @@
   min-height: 100vh;
 }
 
-/* ── Header ────────────────────────────────────────────────────────────── */
+/*  Header  */
 .cal-header {
   margin-bottom: 1.5rem;
 }
@@ -51,7 +45,7 @@
   border-radius: 4px;
 }
 
-/* ── Controls ──────────────────────────────────────────────────────────── */
+/*  Controls  */
 .cal-controls {
   display: flex;
   gap: 1rem;
@@ -94,7 +88,7 @@
   animation: pulse 1s infinite;
 }
 
-/* ── Periodo badge ─────────────────────────────────────────────────────── */
+/*  Periodo badge */
 .cal-periodo-badge {
   display: inline-flex;
   align-items: center;
@@ -117,7 +111,7 @@
   font-weight: 700;
 }
 
-/* ── Grid ──────────────────────────────────────────────────────────────── */
+/*  Grid  */
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -126,7 +120,7 @@
 }
 .cal-grid--loading { opacity: .5; pointer-events: none; }
 
-/* ── Subject Card ──────────────────────────────────────────────────────── */
+/*  Subject Card  */
 .subject-card {
   background: var(--cal-surface);
   border: 1px solid var(--cal-border);
@@ -213,7 +207,7 @@
   text-align: center;
 }
 
-/* ── Grades Table ──────────────────────────────────────────────────────── */
+/*  Grades Table  */
 .grades-table {
   width: 100%;
   border-collapse: collapse;
@@ -245,7 +239,7 @@
   font-size: .9rem;
 }
 
-/* ── Badges tipo ───────────────────────────────────────────────────────── */
+/*  Badges tipo  */
 .badge {
   display: inline-block;
   padding: .15em .6em;
@@ -259,7 +253,7 @@
 .badge--examen   { background: #fce7f3; color: #9d174d; }
 .badge--proyecto { background: #f3e8ff; color: #6b21a8; }
 
-/* ── Empty / Error States ──────────────────────────────────────────────── */
+/*  Empty / Error States  */
 .empty-state,
 .error-state {
   display: flex;
@@ -301,7 +295,7 @@
 }
 .error-state__retry:hover { opacity: .85; }
 
-/* ── Skeleton ──────────────────────────────────────────────────────────── */
+/*  Skeleton  */
 .skel {
   background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
   background-size: 200% 100%;
@@ -320,7 +314,7 @@
 .cal-skeleton__controls{ display: flex; gap: 1rem; margin-bottom: 1.25rem; }
 .cal-skeleton__grid    { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 1rem; }
 
-/* ── Responsive ────────────────────────────────────────────────────────── */
+/*  Responsive  */
 @media (max-width: 600px) {
   .cal-controls { flex-direction: column; align-items: flex-start; }
   .cal-grid { grid-template-columns: 1fr; }

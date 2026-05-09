@@ -1,9 +1,8 @@
 "use client";
 
-/**
- * PeriodSelector.tsx
- * Selector de periodos — Flujo alternativo "Ver periodos anteriores".
- * Al cambiar hace router.push con ?periodo=id (manejado en el container).
+/*
+ selector de periodos flujo alternativo (Ver periodos anteriores).
+ al cambiar hace router.push con ?periodo=id 
  */
 
 import type { PeriodSummaryDTO } from "@/lib/dal/grades";

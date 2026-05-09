@@ -1,10 +1,7 @@
 "use client";
 
-/**
- * CalificacionesContainer.tsx
- * Client Component principal de CU-04.
- * Maneja: filtro por materia (useState), selector de periodo (router.push),
- * y todos los estados de excepción documentados.
+/*
+  Maneja: filtro por materia (useState), selector de periodo (router.push),
  */
 
 import { useState, useMemo, useTransition } from "react";
@@ -21,7 +18,7 @@ import { SubjectCard } from "./SubjectCard";
 import { EmptyState, ErrorState } from "./EmptyState";
 
 
-// ── Props ──────────────────────────────────────────────────────────────────
+//  Props 
 
 interface Props {
   result: ActionResult<CalificacionesResultDTO>;
@@ -29,7 +26,7 @@ interface Props {
   periodoSeleccionado?: string;
 }
 
-// ── Componente ─────────────────────────────────────────────────────────────
+//  Componente 
 
 export function CalificacionesContainer({ result, periodos, periodoSeleccionado }: Props) {
   const router = useRouter();
@@ -38,7 +35,7 @@ export function CalificacionesContainer({ result, periodos, periodoSeleccionado 
   // Filtro por materia — Prueba 3: sin recarga completa
   const [materiaFilter, setMateriaFilter] = useState<string>("todas");
 
-  // ── Excepciones: sin materias / error DB ──────────────────────────────────
+  //  Excepciones: sin materias / error DB 
   if (!result.ok) {
     if (result.errorCode === "NO_MATERIAS") {
       return (
@@ -69,7 +66,7 @@ export function CalificacionesContainer({ result, periodos, periodoSeleccionado 
     ? periodosData.find((p) => p.periodId === periodoSeleccionado)
     : periodosData.find((p) => p.isActive) ?? periodosData[0];
 
-  // ── Excepción: sin calificaciones aún ─────────────────────────────────────
+  //  Excepción: sin calificaciones aun
   const todasLasGrades = periodoActual?.materias.flatMap((m) => m.grades) ?? [];
   const sinCalificaciones = periodoActual && todasLasGrades.length === 0;
 
@@ -79,7 +76,7 @@ export function CalificacionesContainer({ result, periodos, periodoSeleccionado 
     [periodoActual]
   );
 
-  // Materias filtradas — Prueba 3
+  // Materias filtradas 
   const materiasFiltradas: SubjectGradesDTO[] = useMemo(() => {
     if (!periodoActual) return [];
     if (materiaFilter === "todas") return periodoActual.materias;
@@ -88,7 +85,7 @@ export function CalificacionesContainer({ result, periodos, periodoSeleccionado 
     );
   }, [periodoActual, materiaFilter]);
 
-  // Cambiar periodo — Flujo alternativo (searchParam)
+  // Cambiar periodo 
   const handlePeriodoChange = (id: string) => {
     startTransition(() => {
       router.push(`/alumno/calificaciones?periodo=${id}`);

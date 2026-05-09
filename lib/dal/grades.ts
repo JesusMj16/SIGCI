@@ -1,10 +1,8 @@
-/**
- * DAL — Calificaciones del Alumno
- * CU-04: ConsultarCalificaciones
- *
- * Regla de negocio crítica: studentId siempre proviene de la sesión
- * autenticada (getAuthenticatedUser). Nunca se expone como param externo
- * para evitar que un alumno consulte calificaciones ajenas.
+/* ConsultarCalificaciones
+ 
+  regla de negocio  studentId siempre proviene de la sesión
+  autenticada (getAuthenticatedUser), nunca se expone como param externo
+  para evitar que un alumno consulte calificaciones ajenas.
  */
 
 import { prisma } from "@/lib/db";
@@ -14,7 +12,7 @@ import { Prisma } from "../generated/prisma/client";
 import { getAuthenticatedUser } from "./session";
 //import type { Prisma } from "@/lib/generated/prisma";
 
-// ─── DTOs ──────────────────────────────────────────────────────────────────
+//  DTOs 
 
 export interface GradeDetailDTO {
   gradeId: string;
@@ -53,7 +51,7 @@ export interface CalificacionesResultDTO {
   consultaRegistrada: boolean;
 }
 
-// ─── Excepciones tipadas ────────────────────────────────────────────────────
+// ─ Excepciones tipadas 
 
 export class NoMateriasInscritasError extends Error {
   constructor() {
@@ -69,33 +67,32 @@ export class SinCalificacionesError extends Error {
   }
 }
 
-// ─── Función principal ──────────────────────────────────────────────────────
 
 /**
- * Recupera las calificaciones del alumno autenticado.
- *
- * @param periodoId  Opcional. Si se omite devuelve el periodo activo.
- *                   Si se pasa, devuelve ese periodo (flujo alternativo).
+  Recupera las calificaciones del alumno autenticado.
+ 
+  @param periodoId  Opcional, si se omite devuelve el periodo activo.
+                    si se pasa, devuelve ese periodo (flujo alternativo).
  */
 export async function obtenerCalificacionesDelAlumno(
   periodoId?: string
 ): Promise<CalificacionesResultDTO> {
-  // ── 1. Identificar al alumno desde la sesión (Regla de negocio: aislamiento) ──
+  //  1. Identificar al alumno desde la sesión (aislamiento)
   const session = await getAuthenticatedUser([UserRole.ALUMNO]);
   const studentId = session.id;
 
-  // getAuthenticatedUser solo devuelve { id, role } — buscamos el perfil completo
+  // getAuthenticatedUser solo devuelve { id, role } se busca el perfil completo
   const userProfile = await prisma.user.findUniqueOrThrow({
     where: { id: studentId },
     select: { nombre: true, apellidos: true, matricula: true },
   });
 
-  // ── 2. Determinar periodo(s) a consultar ──────────────────────────────────
+  //  2. Determinar periodo(s) a consultar 
   const periodoWhere: Prisma.PeriodWhereInput = periodoId
     ? { id: periodoId }
     : { isActive: true };
 
-  // ── 3. Traer inscripciones del alumno con toda la cadena de datos ─────────
+  //  3. Traer inscripciones del alumno con toda la cadena de datos 
   const enrollments = await prisma.enrollment.findMany({
     where: {
       studentId,
@@ -112,9 +109,9 @@ export async function obtenerCalificacionesDelAlumno(
             where: { status: AssignmentStatus.PUBLICADO },
             include: {
               submissions: {
-                where: { studentId },
+                where: { studentId }, //entregas del alumno
                 include: {
-                  grade: true,
+                  grade: true, //calificaciones
                 },
                 orderBy: { intento: "desc" },
                 take: 1, // último intento por assignment
@@ -126,12 +123,12 @@ export async function obtenerCalificacionesDelAlumno(
     },
   });
 
-  // ── 4. Sin materias inscritas → excepción controlada ─────────────────────
+  //  4. Sin materias inscritas 
   if (enrollments.length === 0) {
     throw new NoMateriasInscritasError();
   }
 
-  // ── 5. Agrupar por periodo ────────────────────────────────────────────────
+  //  5. Agrupar por periodo 
   const periodMap = new Map<string, PeriodCalificacionesDTO>();
 
   for (const enrollment of enrollments) {
@@ -151,7 +148,7 @@ export async function obtenerCalificacionesDelAlumno(
 
     const periodoDTO = periodMap.get(period.id)!;
 
-    // ── 6. Construir detalle de grades por materia ──────────────────────────
+    //  6. Construir detalle de grades por materia 
     const gradeDetails: GradeDetailDTO[] = [];
 
     for (const assignment of assignments) {
@@ -161,8 +158,8 @@ export async function obtenerCalificacionesDelAlumno(
           gradeId: submission.grade.id,
           assignmentId: assignment.id,
           assignmentTitulo: assignment.titulo,
-          assignmentTipo: assignment.tipo.toLowerCase() as GradeDetailDTO["assignmentTipo"],
-          valor: Number(submission.grade.valor),
+          assignmentTipo: assignment.tipo.toLowerCase() as GradeDetailDTO["assignmentTipo"], //identifica si es tarea-proyecto-examen
+          valor: Number(submission.grade.valor), //calificacion
           retroalimentacion: submission.grade.retroalimentacion ?? null,
           submittedAt: submission.submittedAt ?? null,
         });
@@ -184,7 +181,7 @@ export async function obtenerCalificacionesDelAlumno(
     });
   }
 
-  // ── 7. Registrar consulta en log (postcondición CU-04 paso 7) ─────────────
+  //  7. Registrar consulta en log
   let consultaRegistrada = false;
   try {
     await prisma.notification.create({
@@ -212,7 +209,7 @@ export async function obtenerCalificacionesDelAlumno(
   };
 }
 
-// ─── Lista de periodos disponibles (flujo alternativo) ──────────────────────
+//  Lista de periodos disponibles (flujo alternativo) 
 
 export interface PeriodSummaryDTO {
   id: string;
@@ -223,8 +220,8 @@ export interface PeriodSummaryDTO {
 }
 
 /**
- * Devuelve los periodos en los que el alumno autenticado tuvo inscripciones.
- * Usado para el selector "Ver periodos anteriores".
+  devuelve los periodos en los que el alumno autenticado tuvo inscripciones
+  usado para el selector "Ver periodos anteriores"
  */
 export async function obtenerPeriodosDelAlumno(): Promise<PeriodSummaryDTO[]> {
   const session = await getAuthenticatedUser([UserRole.ALUMNO]);
@@ -249,4 +246,38 @@ export async function obtenerPeriodosDelAlumno(): Promise<PeriodSummaryDTO[]> {
     endDate: p.endDate,
     isActive: p.isActive,
   }));
+}
+
+export async function recuperarDatos(periodoId?: string) {
+  return obtenerCalificacionesDelAlumno(periodoId);
+}
+
+export async function buscarInscripciones(studentId: string) {
+  return prisma.enrollment.findMany({
+    where: { studentId },
+  });
+}
+
+export async function recuperarNotas(studentId: string) {
+  return prisma.grade.findMany({
+    where: { studentId },
+  });
+}
+
+export async function registrarAuditoria(userId: string) {
+  return prisma.notification.create({
+    data: {
+      userId,
+      titulo: "Consulta de calificaciones",
+      mensaje: `Consulta registrada el ${new Date().toISOString()}`,
+      leida: true,
+    },
+  });
+}
+
+export async function mostrarTabla(periodoId?: string) {
+  return obtenerCalificacionesDelAlumno(periodoId);
+}
+export function getEstado(period: { isActive: boolean }) {
+  return period.isActive;
 }

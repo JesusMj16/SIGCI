@@ -1,9 +1,8 @@
 "use client";
 
-/**
- * SubjectCard.tsx
- * Muestra el promedio y detalle de calificaciones de una materia.
- * Presenta la tabla con assignmentTipo, titulo, valor, retroalimentacion.
+/*
+ muestra el promedio y detalle de calificaciones de una materia
+ presenta la tabla con assignmentTipo, titulo, valor, retroalimentacion
  */
 
 import { useState } from "react";
@@ -56,7 +55,7 @@ export function SubjectCard({ materia }: Props) {
         </div>
       </div>
 
-      {/* Resumen rápido */}
+      {/* Resumen rapido */}
       <div className="subject-card__summary">
         <span>{materia.grades.length} evaluacion{materia.grades.length !== 1 ? "es" : ""}</span>
         <button
@@ -68,7 +67,7 @@ export function SubjectCard({ materia }: Props) {
         </button>
       </div>
 
-      {/* Tabla de calificaciones — expandible */}
+      {/* Tabla de calificaciones expandible */}
       {expandida && (
         <div className="subject-card__table-wrap">
           {materia.grades.length === 0 ? (
