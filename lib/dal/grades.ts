@@ -1,25 +1,33 @@
-/* ConsultarCalificaciones
- 
-  regla de negocio  studentId siempre proviene de la sesión
-  autenticada (getAuthenticatedUser), nunca se expone como param externo
-  para evitar que un alumno consulte calificaciones ajenas.
+/**
+ * DAL — CU-04: ConsultarCalificaciones
+ *
+ * Reglas de negocio críticas:
+ * 1. studentId proviene SIEMPRE de la sesión autenticada (aislamiento IDOR-safe).
+ * 2. Calificaciones de periodos anteriores siguen accesibles.
+ * 3. Cada consulta queda registrada para auditoría.
+ *
+ * Contrato:
+ * - Excepciones tipadas → traducidas a errorCode por la capa de actions.
+ * - DTOs planos (primitivos) seguros para Client Components.
  */
 
+import "server-only";
+
+import { cache } from "react";
 import { prisma } from "@/lib/db";
-//import { getAuthenticatedUser } from "@/lib/session";
 import { AssignmentStatus, UserRole } from "@/lib/generated/prisma/enums";
 import { Prisma } from "../generated/prisma/client";
 import { getAuthenticatedUser } from "./session";
-//import type { Prisma } from "@/lib/generated/prisma";
 
-//  DTOs 
+// ─── DTOs ──────────────────────────────────────────────────────────────────
 
 export interface GradeDetailDTO {
   gradeId: string;
   assignmentId: string;
   assignmentTitulo: string;
-  assignmentTipo: "tarea" | "examen" | "proyecto";
-  valor: number;          // Decimal → number
+  /** lowercase, default "tarea" si llega un tipo nuevo del schema */
+  assignmentTipo: string;
+  valor: number;
   retroalimentacion: string | null;
   submittedAt: Date | null;
 }
@@ -29,7 +37,7 @@ export interface SubjectGradesDTO {
   subjectId: string;
   subjectNombre: string;
   subjectCodigo: string;
-  promedio: number | null; // null si no hay grades aún
+  promedio: number | null;
   grades: GradeDetailDTO[];
 }
 
@@ -47,15 +55,22 @@ export interface CalificacionesResultDTO {
   alumnoNombre: string;
   alumnoMatricula: string;
   periodos: PeriodCalificacionesDTO[];
-  /** Consulta registrada correctamente en access_log / estadísticas */
   consultaRegistrada: boolean;
 }
 
-// ─ Excepciones tipadas 
+export interface PeriodSummaryDTO {
+  id: string;
+  nombre: string;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+}
+
+// ─── Excepciones tipadas ───────────────────────────────────────────────────
 
 export class NoMateriasInscritasError extends Error {
   constructor() {
-    super("El alumno no tiene materias inscritas en ningún periodo.");
+    super("No tienes materias inscritas en este periodo.");
     this.name = "NoMateriasInscritasError";
   }
 }
@@ -67,217 +82,179 @@ export class SinCalificacionesError extends Error {
   }
 }
 
+export class PeriodoNoEncontradoError extends Error {
+  constructor() {
+    super("El periodo solicitado no existe.");
+    this.name = "PeriodoNoEncontradoError";
+  }
+}
+
+// ─── Query principal ───────────────────────────────────────────────────────
 
 /**
-  Recupera las calificaciones del alumno autenticado.
- 
-  @param periodoId  Opcional, si se omite devuelve el periodo activo.
-                    si se pasa, devuelve ese periodo (flujo alternativo).
+ * Recupera calificaciones del alumno autenticado.
+ * @param periodoId  Si se omite, usa el periodo activo. Si se pasa, valida existencia.
  */
-export async function obtenerCalificacionesDelAlumno(
-  periodoId?: string
-): Promise<CalificacionesResultDTO> {
-  //  1. Identificar al alumno desde la sesión (aislamiento)
-  const session = await getAuthenticatedUser([UserRole.ALUMNO]);
-  const studentId = session.id;
+export const obtenerCalificacionesDelAlumno = cache(
+  async (periodoId?: string): Promise<CalificacionesResultDTO> => {
+    const session = await getAuthenticatedUser([UserRole.ALUMNO]);
+    const studentId = session.id;
 
-  // getAuthenticatedUser solo devuelve { id, role } se busca el perfil completo
-  const userProfile = await prisma.user.findUniqueOrThrow({
-    where: { id: studentId },
-    select: { nombre: true, apellidos: true, matricula: true },
-  });
+    // Perfil del alumno
+    const userProfile = await prisma.user.findUniqueOrThrow({
+      where: { id: studentId },
+      select: { nombre: true, apellidos: true, matricula: true },
+    });
 
-  //  2. Determinar periodo(s) a consultar 
-  const periodoWhere: Prisma.PeriodWhereInput = periodoId
-    ? { id: periodoId }
-    : { isActive: true };
+    // Si llega periodoId, valida que exista (mensaje claro al alumno)
+    if (periodoId) {
+      const exists = await prisma.period.findUnique({
+        where: { id: periodoId },
+        select: { id: true },
+      });
+      if (!exists) throw new PeriodoNoEncontradoError();
+    }
 
-  //  3. Traer inscripciones del alumno con toda la cadena de datos 
-  const enrollments = await prisma.enrollment.findMany({
-    where: {
-      studentId,
-      group: {
-        period: periodoWhere,
+    const periodoWhere: Prisma.PeriodWhereInput = periodoId
+      ? { id: periodoId }
+      : { isActive: true };
+
+    // Inscripciones + cadena de datos
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        studentId,
+        group: { period: periodoWhere },
       },
-    },
-    include: {
-      group: {
-        include: {
-          subject: true,
-          period: true,
-          assignments: {
-            where: { status: AssignmentStatus.PUBLICADO },
-            include: {
-              submissions: {
-                where: { studentId }, //entregas del alumno
-                include: {
-                  grade: true, //calificaciones
+      include: {
+        group: {
+          include: {
+            subject: true,
+            period: true,
+            assignments: {
+              where: { status: AssignmentStatus.PUBLICADO },
+              include: {
+                submissions: {
+                  where: { studentId },
+                  include: { grade: true },
+                  orderBy: { intento: "desc" },
+                  take: 1,
                 },
-                orderBy: { intento: "desc" },
-                take: 1, // último intento por assignment
               },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  //  4. Sin materias inscritas 
-  if (enrollments.length === 0) {
-    throw new NoMateriasInscritasError();
-  }
+    if (enrollments.length === 0) {
+      throw new NoMateriasInscritasError();
+    }
 
-  //  5. Agrupar por periodo 
-  const periodMap = new Map<string, PeriodCalificacionesDTO>();
+    // Agrupar por periodo
+    const periodMap = new Map<string, PeriodCalificacionesDTO>();
 
-  for (const enrollment of enrollments) {
-    const { group } = enrollment;
-    const { period, subject, assignments } = group;
+    for (const enrollment of enrollments) {
+      const { group } = enrollment;
+      const { period, subject, assignments } = group;
 
-    if (!periodMap.has(period.id)) {
-      periodMap.set(period.id, {
-        periodId: period.id,
-        periodNombre: period.nombre,
-        startDate: period.startDate,
-        endDate: period.endDate,
-        isActive: period.isActive,
-        materias: [],
+      if (!periodMap.has(period.id)) {
+        periodMap.set(period.id, {
+          periodId: period.id,
+          periodNombre: period.nombre,
+          startDate: period.startDate,
+          endDate: period.endDate,
+          isActive: period.isActive,
+          materias: [],
+        });
+      }
+
+      const periodoDTO = periodMap.get(period.id)!;
+      const gradeDetails: GradeDetailDTO[] = [];
+
+      for (const assignment of assignments) {
+        const submission = assignment.submissions[0];
+        if (submission?.grade) {
+          gradeDetails.push({
+            gradeId: submission.grade.id,
+            assignmentId: assignment.id,
+            assignmentTitulo: assignment.titulo,
+            assignmentTipo: String(assignment.tipo).toLowerCase(),
+            valor: Number(submission.grade.valor),
+            retroalimentacion: submission.grade.retroalimentacion ?? null,
+            submittedAt: submission.submittedAt ?? null,
+          });
+        }
+      }
+
+      const promedio =
+        gradeDetails.length > 0
+          ? gradeDetails.reduce((acc, g) => acc + g.valor, 0) / gradeDetails.length
+          : null;
+
+      periodoDTO.materias.push({
+        groupId: group.id,
+        subjectId: subject.id,
+        subjectNombre: subject.nombre,
+        subjectCodigo: subject.codigo,
+        promedio: promedio !== null ? Math.round(promedio * 100) / 100 : null,
+        grades: gradeDetails,
       });
     }
 
-    const periodoDTO = periodMap.get(period.id)!;
-
-    //  6. Construir detalle de grades por materia 
-    const gradeDetails: GradeDetailDTO[] = [];
-
-    for (const assignment of assignments) {
-      const submission = assignment.submissions[0]; // último intento
-      if (submission?.grade) {
-        gradeDetails.push({
-          gradeId: submission.grade.id,
-          assignmentId: assignment.id,
-          assignmentTitulo: assignment.titulo,
-          assignmentTipo: assignment.tipo.toLowerCase() as GradeDetailDTO["assignmentTipo"], //identifica si es tarea-proyecto-examen
-          valor: Number(submission.grade.valor), //calificacion
-          retroalimentacion: submission.grade.retroalimentacion ?? null,
-          submittedAt: submission.submittedAt ?? null,
-        });
-      }
+    // Auditoría — fallo no bloquea
+    let consultaRegistrada = false;
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: studentId,
+          titulo: "Consulta de calificaciones",
+          mensaje: `El alumno consultó sus calificaciones${
+            periodoId ? ` del periodo ${periodoId}` : " del periodo actual"
+          }.`,
+          leida: true, // log interno, no es alerta
+        },
+      });
+      consultaRegistrada = true;
+    } catch {
+      console.warn("[CU-04] No se pudo registrar la consulta en el log.");
     }
 
-    const promedio =
-      gradeDetails.length > 0
-        ? gradeDetails.reduce((acc, g) => acc + g.valor, 0) / gradeDetails.length
-        : null;
-
-    periodoDTO.materias.push({
-      groupId: group.id,
-      subjectId: subject.id,
-      subjectNombre: subject.nombre,
-      subjectCodigo: subject.codigo,
-      promedio: promedio !== null ? Math.round(promedio * 100) / 100 : null,
-      grades: gradeDetails,
-    });
+    return {
+      alumnoId: studentId,
+      alumnoNombre: `${userProfile.nombre} ${userProfile.apellidos}`,
+      alumnoMatricula: userProfile.matricula,
+      periodos: Array.from(periodMap.values()).sort(
+        (a, b) => b.startDate.getTime() - a.startDate.getTime()
+      ),
+      consultaRegistrada,
+    };
   }
+);
 
-  //  7. Registrar consulta en log
-  let consultaRegistrada = false;
-  try {
-    await prisma.notification.create({
-      data: {
-        userId: studentId,
-        titulo: "Consulta de calificaciones",
-        mensaje: `El alumno consultó sus calificaciones${periodoId ? ` del periodo ${periodoId}` : " del periodo actual"}.`,
-        leida: true, // interna/estadística, no debe aparecer como alerta
-      },
-    });
-    consultaRegistrada = true;
-  } catch {
-    // Log no bloquea el flujo principal
-    console.warn("[CU-04] No se pudo registrar la consulta en el log.");
-  }
+// ─── Periodos disponibles (selector "Ver periodos anteriores") ─────────────
 
-  return {
-    alumnoId: studentId,
-    alumnoNombre: `${userProfile.nombre} ${userProfile.apellidos}`,
-    alumnoMatricula: userProfile.matricula,
-    periodos: Array.from(periodMap.values()).sort(
-      (a, b) => b.startDate.getTime() - a.startDate.getTime()
-    ),
-    consultaRegistrada,
-  };
-}
+export const obtenerPeriodosDelAlumno = cache(
+  async (): Promise<PeriodSummaryDTO[]> => {
+    const session = await getAuthenticatedUser([UserRole.ALUMNO]);
 
-//  Lista de periodos disponibles (flujo alternativo) 
-
-export interface PeriodSummaryDTO {
-  id: string;
-  nombre: string;
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
-}
-
-/**
-  devuelve los periodos en los que el alumno autenticado tuvo inscripciones
-  usado para el selector "Ver periodos anteriores"
- */
-export async function obtenerPeriodosDelAlumno(): Promise<PeriodSummaryDTO[]> {
-  const session = await getAuthenticatedUser([UserRole.ALUMNO]);
-
-  const periods = await prisma.period.findMany({
-    where: {
-      groups: {
-        some: {
-          enrollments: {
-            some: { studentId: session.id },
+    const periods = await prisma.period.findMany({
+      where: {
+        groups: {
+          some: {
+            enrollments: { some: { studentId: session.id } },
           },
         },
       },
-    },
-    orderBy: { startDate: "desc" },
-  });
+      orderBy: { startDate: "desc" },
+      select: {
+        id: true,
+        nombre: true,
+        startDate: true,
+        endDate: true,
+        isActive: true,
+      },
+    });
 
-  return periods.map((p) => ({
-    id: p.id,
-    nombre: p.nombre,
-    startDate: p.startDate,
-    endDate: p.endDate,
-    isActive: p.isActive,
-  }));
-}
-
-export async function recuperarDatos(periodoId?: string) {
-  return obtenerCalificacionesDelAlumno(periodoId);
-}
-
-export async function buscarInscripciones(studentId: string) {
-  return prisma.enrollment.findMany({
-    where: { studentId },
-  });
-}
-
-export async function recuperarNotas(studentId: string) {
-  return prisma.grade.findMany({
-    where: { studentId },
-  });
-}
-
-export async function registrarAuditoria(userId: string) {
-  return prisma.notification.create({
-    data: {
-      userId,
-      titulo: "Consulta de calificaciones",
-      mensaje: `Consulta registrada el ${new Date().toISOString()}`,
-      leida: true,
-    },
-  });
-}
-
-export async function mostrarTabla(periodoId?: string) {
-  return obtenerCalificacionesDelAlumno(periodoId);
-}
-export function getEstado(period: { isActive: boolean }) {
-  return period.isActive;
-}
+    return periods;
+  }
+);

@@ -1,6 +1,10 @@
+/**
+ * CU-05 — Registrar Calificaciones (Profesor)
+ * Server Component: precarga grupos del profesor.
+ */
+
 import { getGruposProfesorAction } from "@/lib/actions/registrarCalificaciones.actions";
 import { RegistrarCalificacionesContainer } from "./_components/RegistrarCalificacionesContainer";
-import "./calificar.css";
 
 export const metadata = {
   title: "Registrar Calificaciones | SIGCI",
@@ -10,9 +14,5 @@ export const metadata = {
 export default async function CalificarPage() {
   const gruposResult = await getGruposProfesorAction();
 
-  return (
-    <main>
-      <RegistrarCalificacionesContainer gruposResult={gruposResult} />
-    </main>
-  );
+  return <RegistrarCalificacionesContainer gruposResult={gruposResult} />;
 }

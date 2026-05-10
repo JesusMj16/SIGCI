@@ -1,170 +1,193 @@
 "use client";
 
-/*
-  CU-05 — Orquesta los 4 pasos del flujo:
-  1. Seleccionar grupo
-  2. Seleccionar evaluación (assignment)
-  3. Ingresar calificaciones
-  4. Confirmar y ver resultado
+/**
+ * Container CU-05 — orquesta render por paso.
+ * State machine extraída a useCalificarFlow (SRP).
+ * UI tokenizada con paleta UTM.
  */
 
-import { useState, useTransition } from "react";
-import {
-  getAsignacionesGrupoAction,
-  getAlumnosGrupoAction,
-  registrarCalificacionesAction,
-} from "@/lib/actions/registrarCalificaciones.actions";
+import { useEffect, useState } from "react";
 import type { ActionResult } from "@/lib/actions/registrarCalificaciones.actions";
-import type {
-  GrupoDTO,
-  AlumnoEnGrupoDTO,
-  AssignmentDTO,
-  RegistrarCalificacionesResult,
-} from "@/lib/dal/registrarCalificaciones";
-import { GrupoSelector } from "./GrupoSelector";
+import type { GrupoDTO } from "@/lib/dal/registrarCalificaciones";
 import { AsignacionSelector } from "./AsignacionSelector";
-import { TablaCaptura } from "./TablaCaptura";
 import { ErrorState, ResultadoRegistro } from "./ResultadoRegistro";
+import { GrupoSelector } from "./GrupoSelector";
+import { TablaCaptura } from "./TablaCaptura";
+import { PASOS, useCalificarFlow, type Paso } from "./useCalificarFlow";
 
+const PASO_LABELS: Record<Paso, string> = {
+  grupo: "Grupo",
+  asignacion: "Evaluación",
+  captura: "Captura",
+  resultado: "Resultado",
+};
 
-type Paso = "grupo" | "asignacion" | "captura" | "resultado";
+/**
+ * Cada paso usa un color distinto cuando está activo — rompe la monotonía azul.
+ * `done` mantiene el tono más claro del propio acento.
+ */
+const PASO_TONES: Record<Paso, { active: string; done: string }> = {
+  grupo: {
+    active: "bg-primary text-primary-foreground shadow-sm shadow-primary/30",
+    done: "bg-primary/15 text-primary",
+  },
+  asignacion: {
+    active: "bg-violet text-violet-foreground shadow-sm shadow-violet/30",
+    done: "bg-violet/15 text-violet",
+  },
+  captura: {
+    active: "bg-warning text-warning-foreground shadow-sm shadow-warning/30",
+    done: "bg-warning/15 text-warning",
+  },
+  resultado: {
+    active: "bg-success text-success-foreground shadow-sm shadow-success/30",
+    done: "bg-success/15 text-success",
+  },
+};
 
 interface Props {
   gruposResult: ActionResult<GrupoDTO[]>;
 }
 
 export function RegistrarCalificacionesContainer({ gruposResult }: Props) {
-  const [paso, setPaso] = useState<Paso>("grupo");
-  const [isPending, startTransition] = useTransition();
-
-  const [grupoSeleccionado, setGrupoSeleccionado] = useState<GrupoDTO | null>(null);
-  const [asignaciones, setAsignaciones] = useState<AssignmentDTO[]>([]);
-  const [asignacionSeleccionada, setAsignacionSeleccionada] = useState<AssignmentDTO | null>(null);
-  const [alumnos, setAlumnos] = useState<AlumnoEnGrupoDTO[]>([]);
-  const [resultado, setResultado] = useState<RegistrarCalificacionesResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [warnings, setWarnings] = useState<string[]>([]);
-
-  //  Paso 1: seleccionar grupo 
-  const handleSelectGrupo = (grupo: GrupoDTO) => {
-    startTransition(async () => {
-      setError(null);
-      const result = await getAsignacionesGrupoAction(grupo.groupId);
-      if (!result.ok) { setError(result.message); return; }
-      setGrupoSeleccionado(grupo);
-      setAsignaciones(result.data);
-      setPaso("asignacion");
-    });
-  };
-
-  //  Paso 2: seleccionar evaluación 
-  const handleSelectAsignacion = (asignacion: AssignmentDTO) => {
-    startTransition(async () => {
-      setError(null);
-      const result = await getAlumnosGrupoAction(
-        grupoSeleccionado!.groupId,
-        asignacion.assignmentId
-      );
-      if (!result.ok) { setError(result.message); return; }
-      setAsignacionSeleccionada(asignacion);
-      setAlumnos(result.data);
-      setPaso("captura");
-    });
-  };
-
-  //  Paso 3: confirmar registro 
-  const handleConfirmar = (calificaciones: { studentId: string; valor: number | null }[]) => {
-    startTransition(async () => {
-      setError(null);
-      const result = await registrarCalificacionesAction({
-        groupId: grupoSeleccionado!.groupId,
-        assignmentId: asignacionSeleccionada!.assignmentId,
-        calificaciones,
-      });
-      if (!result.ok) { setError(result.message); return; }
-      setResultado(result.data);
-      setWarnings(result.warnings ?? []);
-      setPaso("resultado");
-    });
-  };
-
-  //  Reiniciar 
-  const handleReiniciar = () => {
-    setPaso("grupo");
-    setGrupoSeleccionado(null);
-    setAsignacionSeleccionada(null);
-    setAlumnos([]);
-    setResultado(null);
-    setError(null);
-    setWarnings([]);
-  };
+  const flow = useCalificarFlow();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   if (!gruposResult.ok) {
-    return <ErrorState mensaje={gruposResult.message} />;
+    return (
+      <Layout>
+        <ErrorState mensaje={gruposResult.message} />
+      </Layout>
+    );
   }
 
+  const pasoIdx = PASOS.indexOf(flow.paso);
+
   return (
-    <div className="calificar-page">
-      {/* Header */}
-      <header className="calificar-header">
-        <h1 className="calificar-header__title">Registrar Calificaciones</h1>
-        {/* Breadcrumb de pasos */}
-        <div className="calificar-steps">
-          {(["grupo", "asignacion", "captura", "resultado"] as Paso[]).map((p, i) => (
-            <div key={p} className={`step ${paso === p ? "step--active" : ""} ${["grupo","asignacion","captura","resultado"].indexOf(paso) > i ? "step--done" : ""}`}>
-              <span className="step__num">{i + 1}</span>
-              <span className="step__label">
-                {p === "grupo" ? "Grupo" : p === "asignacion" ? "Evaluación" : p === "captura" ? "Captura" : "Resultado"}
-              </span>
-            </div>
-          ))}
-        </div>
+    <Layout hydrated={hydrated}>
+      {/* Hero — gradiente success → secondary con halo amber */}
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-success/8 via-card to-secondary/8 px-6 py-8 sm:px-10 sm:py-10">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-warning/15 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-20 bottom-0 size-56 rounded-full bg-violet/10 blur-3xl"
+        />
+        <p className="relative text-xs font-medium uppercase tracking-[0.2em] text-success">
+          Académico · Profesor
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
+          Registrar Calificaciones
+        </h1>
+
+        <ol
+          aria-label="Pasos del registro"
+          className="mt-6 flex flex-wrap gap-2"
+          data-testid="steps"
+        >
+          {PASOS.map((p, i) => {
+            const active = flow.paso === p;
+            const done = i < pasoIdx;
+            const tone = PASO_TONES[p];
+            return (
+              <li
+                key={p}
+                data-testid={`step-${p}`}
+                data-state={active ? "active" : done ? "done" : "pending"}
+                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
+                  active
+                    ? tone.active
+                    : done
+                    ? tone.done
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background/40 text-[11px] font-semibold">
+                  {i + 1}
+                </span>
+                <span className="font-medium">{PASO_LABELS[p]}</span>
+              </li>
+            );
+          })}
+        </ol>
       </header>
 
       {/* Error global */}
-      {error && <ErrorState mensaje={error} onRetry={() => setError(null)} />}
+      {flow.error && (
+        <ErrorState mensaje={flow.error} onRetry={flow.clearError} />
+      )}
 
       {/* Loading */}
-      {isPending && <div className="calificar-loading">Cargando…</div>}
-
-      {/* Paso 1 */}
-      {paso === "grupo" && !isPending && (
-        <GrupoSelector
-          grupos={gruposResult.data}
-          onSelect={handleSelectGrupo}
-        />
+      {flow.isPending && (
+        <div
+          data-testid="loading"
+          className="rounded-2xl bg-card px-5 py-6 text-sm text-muted-foreground"
+          aria-live="polite"
+        >
+          Cargando…
+        </div>
       )}
 
-      {/* Paso 2 */}
-      {paso === "asignacion" && !isPending && (
-        <AsignacionSelector
-          grupo={grupoSeleccionado!}
-          asignaciones={asignaciones}
-          onSelect={handleSelectAsignacion}
-          onBack={() => setPaso("grupo")}
-        />
+      {/* Pasos */}
+      {flow.paso === "grupo" && !flow.isPending && (
+        <GrupoSelector grupos={gruposResult.data} onSelect={flow.selectGrupo} />
       )}
 
-      {/* Paso 3 */}
-      {paso === "captura" && !isPending && (
-        <TablaCaptura
-          grupo={grupoSeleccionado!}
-          asignacion={asignacionSeleccionada!}
-          alumnos={alumnos}
-          onConfirmar={handleConfirmar}
-          onBack={() => setPaso("asignacion")}
-          isPending={isPending}
-        />
-      )}
+      {flow.paso === "asignacion" &&
+        !flow.isPending &&
+        flow.grupoSeleccionado && (
+          <AsignacionSelector
+            grupo={flow.grupoSeleccionado}
+            asignaciones={flow.asignaciones}
+            onSelect={flow.selectAsignacion}
+            onBack={() => flow.back("grupo")}
+          />
+        )}
 
-      {/* Paso 4 */}
-      {paso === "resultado" && resultado && (
+      {flow.paso === "captura" &&
+        !flow.isPending &&
+        flow.grupoSeleccionado &&
+        flow.asignacionSeleccionada && (
+          <TablaCaptura
+            grupo={flow.grupoSeleccionado}
+            asignacion={flow.asignacionSeleccionada}
+            alumnos={flow.alumnos}
+            onConfirmar={flow.confirmar}
+            onBack={() => flow.back("asignacion")}
+            isPending={flow.isPending}
+          />
+        )}
+
+      {flow.paso === "resultado" && flow.resultado && (
         <ResultadoRegistro
-          resultado={resultado}
-          warnings={warnings}
-          onReiniciar={handleReiniciar}
+          resultado={flow.resultado}
+          warnings={flow.warnings}
+          onReiniciar={flow.reset}
         />
       )}
-    </div>
+    </Layout>
+  );
+}
+
+function Layout({
+  children,
+  hydrated = true,
+}: {
+  children: React.ReactNode;
+  hydrated?: boolean;
+}) {
+  return (
+    <main
+      data-testid="cu05-root"
+      data-hydrated={hydrated ? "true" : "false"}
+      className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8"
+    >
+      {children}
+    </main>
   );
 }

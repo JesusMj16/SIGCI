@@ -1,14 +1,11 @@
-/*ConsultarCalificaciones
- 
-  server Component carga datos en servidor, pasa al client container
-  protección de rol getAuthenticatedUser(["ALUMNO"]) dentro del DAL
+/**
+ * CU-04 — Consultar Calificaciones (Alumno)
+ * Server Component: carga datos en servidor y entrega al Client Container.
+ * Protección de rol delegada a la DAL (getAuthenticatedUser).
  */
 
-import { Suspense } from "react";
 import { getCalificacionesAction, getPeriodosAlumnoAction } from "@/lib/actions/calificaciones.actions";
-import "./calificaciones.css";
-import { CalificacionesSkeleton } from "./_components/CalificacionesSkeleton";
-import { CalificacionesContainer } from "./_components/CalificacionesContaines";
+import { CalificacionesContainer } from "./_components/CalificacionesContainer";
 
 interface PageProps {
   searchParams: Promise<{ periodo?: string }>;
@@ -22,7 +19,6 @@ export const metadata = {
 export default async function CalificacionesPage({ searchParams }: PageProps) {
   const { periodo } = await searchParams;
 
-  // Carga en paralelo calificaciones + lista de periodos disponibles
   const [calificacionesResult, periodosResult] = await Promise.all([
     getCalificacionesAction(periodo),
     getPeriodosAlumnoAction(),
@@ -31,12 +27,10 @@ export default async function CalificacionesPage({ searchParams }: PageProps) {
   const periodos = periodosResult.ok ? periodosResult.data : [];
 
   return (
-    <Suspense fallback={<CalificacionesSkeleton />}>
-      <CalificacionesContainer
-        result={calificacionesResult}
-        periodos={periodos}
-        periodoSeleccionado={periodo}
-      />
-    </Suspense>
+    <CalificacionesContainer
+      result={calificacionesResult}
+      periodos={periodos}
+      periodoSeleccionado={periodo}
+    />
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
-/*
- Filtro por materia flujo alternativo 
-Usa React useState en el padre; NO hace recarga de página.
+/**
+ * Filtro por materia (flujo alternativo CU-04).
+ * State controlled por padre, sin recarga de página.
  */
 
 interface GradesFilterProps {
@@ -12,18 +12,22 @@ interface GradesFilterProps {
 }
 
 export function GradesFilter({ materias, selected, onChange }: GradesFilterProps) {
-  if (materias.length <= 1) return null; // sin sentido filtrar con 0/1 materia
+  if (materias.length <= 1) return null;
 
   return (
-    <div className="grades-filter">
-      <label className="grades-filter__label" htmlFor="materia-filter">
+    <div className="flex flex-col gap-1">
+      <label
+        htmlFor="materia-filter"
+        className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+      >
         Filtrar materia
       </label>
       <select
         id="materia-filter"
-        className="grades-filter__select"
+        data-testid="materia-filter"
         value={selected}
         onChange={(e) => onChange(e.target.value)}
+        className="h-10 min-w-[180px] rounded-md border border-border bg-background px-3 text-sm text-foreground transition-colors hover:border-primary/40 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
       >
         <option value="todas">Todas las materias</option>
         {materias.map((m) => (

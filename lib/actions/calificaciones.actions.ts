@@ -1,6 +1,6 @@
 /**
  * Server Actions — CU-04: ConsultarCalificaciones
- * Capa intermedia entre la UI (page/componentes) y el DAL.
+ * Capa intermedia entre la UI y el DAL.
  * Maneja errores y serializa para el cliente.
  */
 
@@ -11,17 +11,21 @@ import {
   obtenerPeriodosDelAlumno,
   NoMateriasInscritasError,
   SinCalificacionesError,
+  PeriodoNoEncontradoError,
   type CalificacionesResultDTO,
   type PeriodSummaryDTO,
 } from "@/lib/dal/grades";
 
-// ─── Tipos de respuesta ────────────────────────────────────────────────────
+export type CalificacionesErrorCode =
+  | "NO_MATERIAS"
+  | "SIN_CALIFICACIONES"
+  | "PERIODO_NO_ENCONTRADO"
+  | "DB_ERROR"
+  | "AUTH_ERROR";
 
 export type ActionResult<T> =
   | { ok: true; data: T }
-  | { ok: false; errorCode: "NO_MATERIAS" | "SIN_CALIFICACIONES" | "DB_ERROR" | "AUTH_ERROR"; message: string };
-
-// ─── Actions ───────────────────────────────────────────────────────────────
+  | { ok: false; errorCode: CalificacionesErrorCode; message: string };
 
 export async function getCalificacionesAction(
   periodoId?: string
@@ -36,7 +40,9 @@ export async function getCalificacionesAction(
     if (err instanceof SinCalificacionesError) {
       return { ok: false, errorCode: "SIN_CALIFICACIONES", message: err.message };
     }
-    // Error de sesión / permisos
+    if (err instanceof PeriodoNoEncontradoError) {
+      return { ok: false, errorCode: "PERIODO_NO_ENCONTRADO", message: err.message };
+    }
     if (err instanceof Error && err.message.includes("Unauthorized")) {
       return { ok: false, errorCode: "AUTH_ERROR", message: "No autorizado." };
     }
