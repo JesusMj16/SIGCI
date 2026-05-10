@@ -8,6 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "db:seed": "tsx prisma/seed.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:cu04": "playwright test --project=alumno --project=alumno-sinmaterias",
+    "test:e2e:cu05": "playwright test --project=profesor",
     "prompts:validate": "tsx .claude/prompts/validator/cli.ts --all",
     "capture:baseline": "playwright test scripts/e2e/capture-baseline.spec.ts",
     "seed:capture-users": "tsx scripts/seed-capture-users.ts"
