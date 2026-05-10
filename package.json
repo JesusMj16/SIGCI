@@ -15,7 +15,10 @@
     "test:e2e:cu05": "playwright test --project=profesor",
     "prompts:validate": "tsx .claude/prompts/validator/cli.ts --all",
     "capture:baseline": "playwright test scripts/e2e/capture-baseline.spec.ts",
-    "seed:capture-users": "tsx scripts/seed-capture-users.ts"
+    "seed:capture-users": "tsx scripts/seed-capture-users.ts",
+    "seed:horarios": "tsx prisma/seed_horarios.ts",
+    "test:e2e": "playwright test --config playwright.e2e.config.ts",
+    "test:e2e:headed": "playwright test --config playwright.e2e.config.ts --headed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
