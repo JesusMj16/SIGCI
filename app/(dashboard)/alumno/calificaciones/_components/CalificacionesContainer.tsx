@@ -155,19 +155,6 @@ export function CalificacionesContainer({
             onChange={setMateriaFilter}
           />
         </div>
-
-        {periodoActual && (
-          <div
-            data-testid="periodo-badge"
-            className="inline-flex flex-col items-center justify-center gap-2 self-start rounded-full px-3 py-1.5 text-sm text-secondary"
-          > 
-            {periodoActual.isActive && (
-              <span className="rounded-full bg-success px-2 py-0.5 text-xs font-medium text-success-foreground">
-                Activo
-              </span>
-            )}
-          </div>
-        )}
       </section>
 
       {/* Estado: sin calificaciones */}
