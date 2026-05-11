@@ -20,24 +20,38 @@ export function ordenarTareas(
   tareas: TareaPendienteDTO[],
   criterio: CriterioOrden
 ): TareaPendienteDTO[] {
-  const copia = [...tareas];
+  // Cachear epoch una sola vez por tarea para no re-parsear en cada comparacion.
+  const conEpoch = tareas.map((t) => ({
+    t,
+    epoch: new Date(t.fechaLimite).getTime(),
+  }));
+  const byFecha = (a: { epoch: number }, b: { epoch: number }) =>
+    a.epoch - b.epoch;
+
   switch (criterio) {
     case "fecha":
-      return copia.sort(
-        (a, b) =>
-          new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime()
-      );
+      conEpoch.sort(byFecha);
+      break;
     case "materia":
-      return copia.sort((a, b) =>
-        a.materia.nombre.localeCompare(b.materia.nombre, "es")
+      conEpoch.sort(
+        (a, b) =>
+          a.t.materia.nombre.localeCompare(b.t.materia.nombre, "es") ||
+          byFecha(a, b)
       );
+      break;
     case "estado":
-      return copia.sort(
-        (a, b) => ORDEN_ESTADO[a.estado] - ORDEN_ESTADO[b.estado]
+      conEpoch.sort(
+        (a, b) =>
+          ORDEN_ESTADO[a.t.estado] - ORDEN_ESTADO[b.t.estado] || byFecha(a, b)
       );
+      break;
     case "tipo":
-      return copia.sort((a, b) => a.tipo.localeCompare(b.tipo, "es"));
+      conEpoch.sort(
+        (a, b) => a.t.tipo.localeCompare(b.t.tipo, "es") || byFecha(a, b)
+      );
+      break;
   }
+  return conEpoch.map((x) => x.t);
 }
 
 export function hrefDetalle(tarea: TareaPendienteDTO): string {
