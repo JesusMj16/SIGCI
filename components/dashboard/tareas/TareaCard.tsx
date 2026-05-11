@@ -7,6 +7,7 @@ const FECHA_FMT = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
   month: "short",
   year: "numeric",
+  timeZone: "America/Mexico_City",
 });
 
 const URGENCIA_BADGE: Record<TareaPendienteDTO["urgencia"], string> = {
@@ -39,6 +40,10 @@ export function TareaCard({ tarea }: { tarea: TareaPendienteDTO }) {
   return (
     <Link
       href={hrefDetalle(tarea)}
+      data-testid="tarea-card"
+      data-materia-id={tarea.materia.id}
+      data-estado={tarea.estado}
+      data-urgencia={tarea.urgencia}
       className="group flex flex-col gap-3 rounded-2xl border border-neutral-foreground/10 bg-card p-5 transition hover:border-primary/40 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       <div className="flex items-start justify-between gap-3">

@@ -3,11 +3,16 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { getAuthenticatedUser } from "@/lib/dal/session";
-import { ok, type Result } from "@/lib/contracts/result";
+import { ok, err, type Result } from "@/lib/contracts/result";
 
 export type EstadoTarea = "PENDIENTE" | "ENTREGADA" | "VENCIDA";
 export type Urgencia = "alta" | "media" | "baja";
 export type TipoTarea = "TAREA" | "EXAMEN" | "PROYECTO";
+
+export type TareaDetalleDTO = TareaPendienteDTO & {
+  instrucciones: string | null;
+  rubrica: string | null;
+};
 
 export type TareaPendienteDTO = {
   submissionId: string;
@@ -86,6 +91,60 @@ export const getTareasPendientesAlumno = cache(
     });
 
     return ok(tareas);
+  }
+);
+
+/** ALUMNO: detalle de una asignacion. Valida inscripcion del alumno en el grupo. */
+export const getTareaDetalleAlumno = cache(
+  async (assignmentId: string): Promise<Result<TareaDetalleDTO>> => {
+    const { id: userId } = await getAuthenticatedUser(["ALUMNO"]);
+
+    const submission = await prisma.submission.findFirst({
+      where: {
+        studentId: userId,
+        assignmentId,
+        assignment: {
+          status: "PUBLICADO",
+          group: {
+            enrollments: { some: { studentId: userId } },
+          },
+        },
+      },
+      include: {
+        assignment: { include: { group: { include: { subject: true } } } },
+      },
+    });
+
+    if (!submission) {
+      return err("Tarea no encontrada o sin acceso.", "NOT_FOUND");
+    }
+
+    const limite = submission.assignment.fechaLimite;
+    const now = Date.now();
+    const diasRestantes = Math.ceil((limite.getTime() - now) / MS_DAY);
+    const vencida = limite.getTime() < now;
+
+    return ok({
+      submissionId: submission.id,
+      assignmentId: submission.assignment.id,
+      titulo: submission.assignment.titulo,
+      tipo: submission.assignment.tipo as TipoTarea,
+      fechaLimite: limite.toISOString(),
+      diasRestantes,
+      urgencia: calcularUrgencia(diasRestantes),
+      estado: vencida ? "VENCIDA" : "PENDIENTE",
+      materia: {
+        id: submission.assignment.group.subject.id,
+        nombre: submission.assignment.group.subject.nombre,
+        codigo: submission.assignment.group.subject.codigo,
+      },
+      grupo: {
+        id: submission.assignment.group.id,
+        nombre: submission.assignment.group.nombre,
+      },
+      instrucciones: submission.assignment.instrucciones,
+      rubrica: submission.assignment.rubrica,
+    });
   }
 );
 

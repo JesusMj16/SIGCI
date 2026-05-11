@@ -1,3 +1,14 @@
+// BUG CONOCIDO (CU-10) — hidratacion global rota:
+// Este client component (y al parecer todos los de la app) no recibe react fiber
+// durante la hidratacion. Los selects de filtro/orden no responden a onChange y
+// la lista queda en el orden default ("fecha") del DAL.
+// Reproducido tanto en `next dev` (Turbopack) como en `next dev --webpack`.
+// En `next start` el proxy/auth entra en loop de redireccion en /login, asi que
+// produccion tampoco se puede probar end-to-end hasta resolver eso.
+// La logica de filtrarPorMateria/ordenarTareas esta verificada por Vitest unit.
+// Sospechas: posible incompatibilidad de Next 16.2.1 + next-auth v5 beta + React 19
+// o configuracion faltante (AUTH_URL/AUTH_TRUST_HOST). Requiere investigacion fuera
+// del scope del CU-10.
 "use client";
 
 import { useMemo, useState } from "react";
@@ -40,10 +51,11 @@ export function TareasPendientesList({ tareas }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5" data-testid="tareas-list">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <Filtro
           label="Filtrar por materia"
+          testId="filtro-materia"
           value={materiaId ?? ""}
           onChange={(v) => setMateriaId(v === "" ? null : v)}
           options={[
@@ -56,6 +68,7 @@ export function TareasPendientesList({ tareas }: Props) {
         />
         <Filtro
           label="Ordenar por"
+          testId="ordenar-por"
           value={criterio}
           onChange={(v) => setCriterio(v as CriterioOrden)}
           options={[
@@ -86,11 +99,13 @@ export function TareasPendientesList({ tareas }: Props) {
 
 function Filtro({
   label,
+  testId,
   value,
   onChange,
   options,
 }: {
   label: string;
+  testId?: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
@@ -101,6 +116,7 @@ function Filtro({
         {label}
       </span>
       <select
+        data-testid={testId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="rounded-lg border border-neutral-foreground/15 bg-card px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary"
