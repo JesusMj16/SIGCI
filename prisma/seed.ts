@@ -418,6 +418,157 @@ async function main() {
   console.log("  Prueba 6   -> crear grupo sin enrollments en BD -> mensaje sin alumnos");
   console.log("  Prueba 7   -> login hermes / pugulso123 -> /profesor/calificar -> redirect");
   console.log("  Prueba 8   -> desconectar BD despues de guardar -> grade persiste, warning en resultado");
+
+  // --- CU-10: datos academicos para Tareas Pendientes del alumno Hermes ---
+  // Periodo activo (idempotente por nombre).
+  const periodExisting = await prisma.period.findFirst({
+    where: { nombre: "2026-1" },
+  });
+  const period = periodExisting
+    ? periodExisting.isActive
+      ? periodExisting
+      : await prisma.period.update({
+          where: { id: periodExisting.id },
+          data: { isActive: true },
+        })
+    : await prisma.period.create({
+        data: {
+          nombre: "2026-1",
+          startDate: new Date("2026-01-15"),
+          endDate: new Date("2026-06-30"),
+          isActive: true,
+        },
+      });
+
+  // Materias.
+  const programacion = await prisma.subject.upsert({
+    where: { codigo: "PRG-101" },
+    update: {},
+    create: { nombre: "Programacion", codigo: "PRG-101", creditos: 6 },
+  });
+  const baseDatos = await prisma.subject.upsert({
+    where: { codigo: "BD-201" },
+    update: {},
+    create: { nombre: "Base de Datos", codigo: "BD-201", creditos: 6 },
+  });
+
+  // Grupos (idempotente por (subjectId, periodId, nombre)).
+  async function upsertGroup(subjectId: string, nombre: string) {
+    const existing = await prisma.group.findFirst({
+      where: { subjectId, periodId: period.id, nombre },
+    });
+    if (existing) return existing;
+    return prisma.group.create({
+      data: {
+        subjectId,
+        periodId: period.id,
+        teacherId: profesor.id,
+        nombre,
+      },
+    });
+  }
+  const grupoPRG = await upsertGroup(programacion.id, "A");
+  const grupoBD = await upsertGroup(baseDatos.id, "B");
+
+  // Inscripciones de Hermes en ambos grupos.
+  await prisma.enrollment.upsert({
+    where: {
+      studentId_groupId: { studentId: hermes.id, groupId: grupoPRG.id },
+    },
+    update: {},
+    create: { studentId: hermes.id, groupId: grupoPRG.id },
+  });
+  await prisma.enrollment.upsert({
+    where: {
+      studentId_groupId: { studentId: hermes.id, groupId: grupoBD.id },
+    },
+    update: {},
+    create: { studentId: hermes.id, groupId: grupoBD.id },
+  });
+
+  // Tareas con urgencias variadas (relativas a hoy).
+  const dias = (n: number) =>
+    new Date(Date.now() + n * 24 * 60 * 60 * 1000);
+
+  type TareaSeed = {
+    groupId: string;
+    titulo: string;
+    tipo: "TAREA" | "EXAMEN" | "PROYECTO";
+    fechaLimite: Date;
+    instrucciones: string;
+  };
+  const tareasSeed: TareaSeed[] = [
+    {
+      groupId: grupoPRG.id,
+      titulo: "Entrega 1 - Recursion",
+      tipo: "TAREA",
+      fechaLimite: dias(-2),
+      instrucciones: "Implementar funciones recursivas basicas.",
+    },
+    {
+      groupId: grupoPRG.id,
+      titulo: "Examen parcial",
+      tipo: "EXAMEN",
+      fechaLimite: dias(1),
+      instrucciones: "Examen sobre estructuras de datos.",
+    },
+    {
+      groupId: grupoBD.id,
+      titulo: "Modelo Entidad-Relacion",
+      tipo: "PROYECTO",
+      fechaLimite: dias(5),
+      instrucciones: "Disenar el ER de un sistema academico.",
+    },
+    {
+      groupId: grupoBD.id,
+      titulo: "Consultas SQL",
+      tipo: "TAREA",
+      fechaLimite: dias(14),
+      instrucciones: "Resolver 10 consultas SQL del laboratorio.",
+    },
+  ];
+
+  for (const t of tareasSeed) {
+    let assignment = await prisma.assignment.findFirst({
+      where: { groupId: t.groupId, titulo: t.titulo },
+    });
+    if (!assignment) {
+      assignment = await prisma.assignment.create({
+        data: {
+          groupId: t.groupId,
+          titulo: t.titulo,
+          tipo: t.tipo,
+          status: "PUBLICADO",
+          fechaLimite: t.fechaLimite,
+          instrucciones: t.instrucciones,
+        },
+      });
+    } else {
+      assignment = await prisma.assignment.update({
+        where: { id: assignment.id },
+        data: { fechaLimite: t.fechaLimite, status: "PUBLICADO" },
+      });
+    }
+
+    await prisma.submission.upsert({
+      where: {
+        assignmentId_studentId_intento: {
+          assignmentId: assignment.id,
+          studentId: hermes.id,
+          intento: 1,
+        },
+      },
+      update: { status: "PENDIENTE" },
+      create: {
+        assignmentId: assignment.id,
+        studentId: hermes.id,
+        status: "PENDIENTE",
+        intento: 1,
+      },
+    });
+  }
+
+  console.log("CU-10 seed: 1 periodo, 2 materias, 2 grupos, 2 inscripciones, 4 tareas pendientes para Hermes.");
 }
 
 
