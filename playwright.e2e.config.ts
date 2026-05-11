@@ -46,10 +46,21 @@ export default defineConfig({
     {
       name: "profesor",
       testMatch: /specs\/.*\.profesor\.spec\.ts$/,
+      // CU-09 (crear-asignacion) tiene su propio project autónomo.
+      testIgnore: /crear-asignacion\.profesor\.spec\.ts$/,
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         storageState: "tests/e2e/.auth/profesor.json",
+      },
+    },
+    {
+      // CU-09: spec autónomo — hace login inline para no depender del
+      // shared auth.setup.ts (que tiene desajustes pendientes en el merge).
+      name: "cu09",
+      testMatch: /specs\/crear-asignacion\.profesor\.spec\.ts$/,
+      use: {
+        ...devices["Desktop Chrome"],
       },
     },
     {

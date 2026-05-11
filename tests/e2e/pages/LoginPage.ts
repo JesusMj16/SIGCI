@@ -36,27 +36,29 @@ export class LoginPage {
     await this.submit().click();
   }
 
+  /**
+   * Espera a que la sesión esté establecida. Usamos el <nav> "Navegación
+   * principal" (presente en el layout del dashboard) como signal — más
+   * confiable que waitForURL porque el proxy renderiza el dashboard
+   * manteniendo la URL en /login para usuarios ya autenticados.
+   */
+  private loggedIn() {
+    return this.page.getByRole("navigation", { name: /navegaci/i });
+  }
+
   async login(creds: Credenciales) {
     await this.goto();
     await this.email().fill(creds.email);
     await this.password().fill(creds.password);
-    await Promise.all([
-      this.page.waitForURL((url) => !/\/login$/.test(url.toString()), {
-        timeout: 15_000,
-      }),
-      this.submit().click(),
-    ]);
+    await this.submit().click();
+    await expect(this.loggedIn()).toBeVisible({ timeout: 20_000 });
   }
 
   async loginAs(email: string, password: string) {
     await this.email().fill(email);
     await this.password().fill(password);
-    await Promise.all([
-      this.page.waitForURL((url) => !/\/login(\?|$)/.test(url.pathname), {
-        timeout: 15_000,
-      }),
-      this.submit().click(),
-    ]);
+    await this.submit().click();
+    await expect(this.loggedIn()).toBeVisible({ timeout: 20_000 });
   }
 
   async expectError(re: RegExp) {
