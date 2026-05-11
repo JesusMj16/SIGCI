@@ -39,6 +39,17 @@
   --color-card: var(--card);
   --color-neutral: var(--neutral);
   --color-neutral-foreground: var(--neutral-foreground);
+  /* Accents complementarios — paleta extendida UTM */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-violet: var(--violet);
+  --color-violet-foreground: var(--violet-foreground);
+  --color-rose: var(--rose);
+  --color-rose-foreground: var(--rose-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -55,6 +66,17 @@
   --secondary-foreground: #F4F6F7;
   --neutral: #F4F6F7;
   --neutral-foreground: #0B5471;
+  /* Acentos complementarios (light) */
+  --success: #2F8F6F;          /* Teal — promedio excelente, ok */
+  --success-foreground: #F4F6F7;
+  --warning: #C58B1A;          /* Amber — alerta no destructiva */
+  --warning-foreground: #F4F6F7;
+  --info: #3D7BA8;             /* Azul claro — info, tip */
+  --info-foreground: #F4F6F7;
+  --violet: #6B5CA5;            /* Violeta — categoria proyecto/secundario */
+  --violet-foreground: #F4F6F7;
+  --rose: #C2547B;              /* Rosa — categoria tarea/destacado suave */
+  --rose-foreground: #F4F6F7;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -86,6 +108,17 @@
 }
 
 .dark {
+  /* Acentos complementarios (dark) — más saturados para contraste */
+  --success: #4DBE99;
+  --success-foreground: #0B2A22;
+  --warning: #E2A93A;
+  --warning-foreground: #2C1F0A;
+  --info: #6FA8D6;
+  --info-foreground: #0B1C2A;
+  --violet: #9A8BD9;
+  --violet-foreground: #1F1A33;
+  --rose: #E07AA1;
+  --rose-foreground: #2A0F1B;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

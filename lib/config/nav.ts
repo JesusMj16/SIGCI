@@ -36,11 +36,15 @@ export const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Cursos", href: "/alumno/cursos", iconKey: "book" },
     { label: "Tareas", href: "/alumno/tareas", iconKey: "check" },
     { label: "Calificaciones", href: "/alumno/calificaciones", iconKey: "academic" },
+    { label: "Horario", href: "/alumno/horario", iconKey: "calendar" },
   ],
   PROFESOR: [
     ...commonNavItems,
     { label: "Grupos", href: "/profesor/grupos", iconKey: "group" },
     { label: "Calificar", href: "/profesor/calificar", iconKey: "check" },
+    // why: antes apuntaba a /alumno/horario por copy-paste; cada rol
+    // tiene su propia ruta y su propia DAL (privacidad CU-06).
+    { label: "Horario", href: "/profesor/horario", iconKey: "calendar" },
   ],
   ADMIN: [
     ...commonNavItems,
