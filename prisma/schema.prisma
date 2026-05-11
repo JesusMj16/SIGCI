@@ -225,6 +225,16 @@ model Group {
   nombre    String @db.VarChar(100)
   cupo      Int    @default(30)     // D3: capacidad máxima de alumnos
 
+  // CU-06: campos del horario. Defaults seguros para que la migración
+  // no quede `NOT NULL` sin respaldo si la tabla ya tiene filas (riesgo
+  // detectado en migration 20260506110002_init). También sirve como
+  // contrato: 1=Lunes, formato "HH:mm" 24h, aula "POR ASIGNAR" como
+  // sentinel intencional.
+  day         Int    @default(1)
+  startTime   String @default("08:00") @db.VarChar(5)
+  endTime     String @default("10:00") @db.VarChar(5)
+  classroom   String @default("POR ASIGNAR") @db.VarChar(64)
+
   subject     Subject      @relation(fields: [subjectId], references: [id])
   teacher     User         @relation(fields: [teacherId], references: [id])
   period      Period       @relation(fields: [periodId], references: [id])
