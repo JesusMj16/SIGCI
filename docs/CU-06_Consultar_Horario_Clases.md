@@ -12,42 +12,41 @@ Archivos reales:
 
 ## 1. Diagrama de Actividades
 
-- Círculo negro (inicio) → línea continua con flecha → siguiente.
-- Rectángulo redondeado: `Usuario navega a /alumno/horario | /profesor/horario`. Línea continua con flecha → siguiente.
-- Rombo: `¿rol?`.
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Usuario navega a /alumno/horario | /profesor/horario`.
+- Rombo `¿rol?`:
   - `[ALUMNO]` → rectángulo `getMyStudentSchedule()`.
   - `[PROFESOR]` → rectángulo `getMyTeacherSchedule()`.
-  - `[else]` → rectángulo `redirect("/")` → nodo final.
-- (Ambos converger en) rectángulo: `getAuthenticatedUser(["ALUMNO"|"PROFESOR"])`. Línea continua con flecha → siguiente.
-- Rectángulo: `resolvePeriod() → {period: Period.findFirst({isActive:true}), isFallback:false}`. Línea continua con flecha → rombo.
-- Rombo: `¿period activo encontrado?`.
+  - `[else]` → `redirect("/")` → nodo final.
+- (Convergen) Rectángulo: `getAuthenticatedUser(["ALUMNO"|"PROFESOR"]) → resolvePeriod() → {period: Period.findFirst({isActive:true}), isFallback:false}`.
+- Rombo `¿period activo encontrado?`:
   - `[no]` → rectángulo `prisma.period.findFirst({orderBy:{endDate:desc}}) → fallback (isFallback=true)`.
   - `[sí]` → siguiente.
-- Rombo: `¿period === null?`.
-  - `[sí]` → rectángulo `return EMPTY {schedule:[], period:null, isFallback:false}` → render hero + alert vacío → nodo final.
-  - `[no]` → siguiente rombo (split por rol).
-- Rombo: `¿rol?`.
-  - `[ALUMNO]` → rectángulo: `prisma.enrollment.findMany({studentId, group.periodId, include:{group:{subject, teacher, schedule:{day, startTime, endTime, classroom, groupName}}}})`.
-  - `[PROFESOR]` → rectángulo: `prisma.group.findMany({teacherId, periodId, include:{subject, day, startTime, endTime, classroom}})`.
-- (Convergen) Línea continua con flecha → región de expansión `«iterative»` sobre `groups/enrollments`:
-  - Rombo: `¿isValidDay(day) && isValidTime(start) && isValidTime(end)?`.
-    - `[no]` → rectángulo `descartar fila (continue)`.
-    - `[sí]` → rectángulo `Construir ScheduleClassDTO{id, subject, teacher?, classroom, day, startTime, endTime, groupName}`.
-- Salida de región → rectángulo: `return ScheduleDTO {schedule, period, isFallback}`. Línea continua con flecha → siguiente.
-- Rectángulo: `<ScheduleGrid schedule period role/>` (Client Component) renderiza tabla semanal (Lun..Sáb). Línea continua con flecha → siguiente.
-- Rombo: `¿isFallback?`.
-  - `[sí]` → rectángulo con lado entrante de ángulo cóncavo (evento exterior): `Alert "Periodo inactivo, mostrando último"`.
+- Rombo `¿period === null?`:
+  - `[sí]` → rectángulo `return EMPTY {schedule:[], period:null, isFallback:false} → render hero + alert vacío` → nodo final.
   - `[no]` → siguiente.
-- (Convergen) → rombo: `¿usuario elige "Agregar a calendario"?`.
+- Rombo `¿rol?` (split por query):
+  - `[ALUMNO]` → rectángulo: `prisma.enrollment.findMany({studentId, group.periodId, include:{group:{subject, teacher, day, startTime, endTime, classroom, groupName}}})`.
+  - `[PROFESOR]` → rectángulo: `prisma.group.findMany({teacherId, periodId, include:{subject, day, startTime, endTime, classroom}})`.
+- (Convergen) Región de expansión `«iterative»` sobre `groups/enrollments`:
+  - Rombo `¿isValidDay(day) && isValidTime(start) && isValidTime(end)?`:
+    - `[no]` → `descartar fila (continue)`.
+    - `[sí]` → `Construir ScheduleClassDTO{id, subject, teacher?, classroom, day, startTime, endTime, groupName}`.
+- Rectángulo: `return ScheduleDTO {schedule, period, isFallback} → <ScheduleGrid schedule period role/> renderiza tabla semanal (Lun..Sáb)`.
+- Rombo `¿isFallback?`:
+  - `[sí]` → rectángulo con lado entrante cóncavo (evento exterior): `Alert "Periodo inactivo, mostrando último"`.
+  - `[no]` → siguiente.
+- Rombo (flujo alternativo) `¿filtroDía aplicado?`:
+  - `[sí]` → rectángulo `ScheduleGrid filtra DTO por DayId` → vuelta a render.
+  - `[no]` → siguiente.
+- Rombo `¿usuario elige "Agregar a calendario"?`:
   - `[no]` → nodo final.
-  - `[sí]` → barra gruesa (fork) → rectángulo: `buildIcsForSchedule(schedule, period)` (lib/presentation/horario_ics.ts).
-- Rectángulo: `Generar VTIMEZONE America/Mexico_City + VEVENT por clase con RRULE FREQ=WEEKLY;BYDAY=BYDAY[day-1];UNTIL=period.endDate`. Línea continua con flecha → siguiente.
-- Rectángulo: `escapeText + line folding 75 octetos (RFC 5545 §3.1, §3.3.11)`. Línea continua con flecha → rombo.
-- Rombo: `¿generación OK?`.
+  - `[sí]` → barra gruesa (fork) → rectángulo: `buildIcsForSchedule(schedule, period) — VTIMEZONE America/Mexico_City + VEVENT por clase con RRULE FREQ=WEEKLY;BYDAY=BYDAY[day-1];UNTIL=period.endDate + escapeText + line folding 75 octetos (RFC 5545 §3.1, §3.3.11)`.
+- Rombo `¿generación OK?`:
   - `[no]` → rectángulo `Alert "Fallo al generar archivo de calendario"` → nodo final.
-  - `[sí]` → rectángulo con lado saliente convexo (evento emitido): `Descargar horario.ics`. Línea continua con flecha → barra gruesa (join) → nodo final (círculo blanco con negro concéntrico).
-
-Flujo alternativo "día específico": rombo `¿filtroDía aplicado?` después de render ScheduleGrid → `[sí]` → rectángulo `ScheduleGrid filtra DTO por DayId` → de vuelta a render.
+  - `[sí]` → rectángulo con lado saliente convexo (evento emitido): `Descargar horario.ics` → barra gruesa (join) → nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Usuario (Alumno/Profesor)` contiene: nodo inicial, navegar a `/alumno/horario | /profesor/horario`, "Agregar a calendario", filtrar por día específico.

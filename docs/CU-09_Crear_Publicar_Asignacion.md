@@ -16,53 +16,44 @@ Archivos reales:
 
 ## 1. Diagrama de Actividades
 
-- Círculo negro (inicio) → línea continua con flecha → siguiente.
-- Rectángulo: `Profesor navega a /profesor/asignaciones/nueva`. Línea continua con flecha → siguiente.
-- Rectángulo: `page.tsx: await getGruposProfesorAction()` → `dal.obtenerGruposDelProfesor()`. Línea continua con flecha → siguiente.
-- Rectángulo: `Render CrearAsignacionContainer con GrupoOpcionDTO[]`. Línea continua con flecha → siguiente.
-- Rectángulo: `Profesor abre SelectorGrupos y selecciona uno o varios grupos`. Línea continua con flecha → siguiente.
-- Rectángulo: `Profesor llena FormularioAsignacion (tipo, título, instrucciones, fechaLimite, rúbrica?)`. Línea continua con flecha → rombo.
-- Rombo: `¿modo?`.
-  - `[BORRADOR]` → flecha hacia siguiente actividad con guarda `[BORRADOR]`.
-  - `[PUBLICAR]` → flecha hacia siguiente actividad con guarda `[PUBLICAR]`.
-- Rectángulo: `Click "Guardar" → crearAsignacionAction(input)`. Línea continua con flecha → rectángulo `validarInput(input)`.
-- Rombo: `¿título?`.
-  - `[vacío || >256]` → rectángulo `throw ValidationError` → nodo final.
-- Rombo: `¿instrucciones vacías?`.
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Profesor navega a /profesor/asignaciones/nueva; page.tsx ejecuta await getGruposProfesorAction() → dal.obtenerGruposDelProfesor() → Render CrearAsignacionContainer con GrupoOpcionDTO[]`.
+- Rectángulo: `Profesor selecciona uno o varios grupos en SelectorGrupos; llena FormularioAsignacion (tipo, título, instrucciones, fechaLimite, rúbrica?); elige modo BORRADOR|PUBLICAR; click "Guardar" → crearAsignacionAction(input)`.
+- Rectángulo: `validarInput(input)`.
+- Rombo `¿título vacío || >256 || instrucciones vacías || groupIds.length===0 || AssignmentType inválido?`:
   - `[sí]` → `throw ValidationError` → final.
-- Rombo: `¿groupIds.length===0?`.
-  - `[sí]` → `throw ValidationError` → final.
-- Rombo: `¿AssignmentType válido?`.
-  - `[no]` → `throw ValidationError` → final.
-- Rombo: `¿fechaLimite parsea?`.
+  - `[no]` → siguiente.
+- Rombo `¿fechaLimite parsea && > Date.now()?`:
   - `[NaN]` → `throw FechaInvalidaError("inválida")` → final.
-- Rombo: `¿fechaLimite > Date.now()?`.
-  - `[no]` → `throw FechaInvalidaError("debe ser futura")` → final.
-- (Validación pasada) Línea continua con flecha → rectángulo: `prisma.group.findMany({id IN groupIds, include:{period, enrollments:{studentId}}})`. Línea continua con flecha → región de expansión `«iterative»` sobre `groups`:
-  - Rombo: `¿groups.length === input.groupIds.length?`.
-    - `[no]` → rectángulo `throw ForbiddenError`.
-  - Rombo: `¿g.teacherId === session.id?`.
-    - `[no]` → `throw ForbiddenError`.
-  - Rombo: `¿g.period.isActive?`.
-    - `[no]` → `throw PeriodoCerradoError`.
-  - Rombo: `¿startDate ≤ fechaLimite ≤ endDate?`.
-    - `[no]` → `throw FechaInvalidaError("dentro del periodo activo")`.
-- Salida de la región → rectángulo: `status = modo==="PUBLICAR" ? PUBLICADO : BORRADOR`. Línea continua con flecha → rectángulo `prisma.$transaction inicio`.
+  - `[≤ now]` → `throw FechaInvalidaError("debe ser futura")` → final.
+  - `[sí]` → siguiente.
+- Rectángulo: `prisma.group.findMany({id IN groupIds, include:{period, enrollments:{studentId}}})`.
+- Región de expansión `«iterative»` sobre `groups` (ownership + periodo):
+  - Rombo `¿groups.length === input.groupIds.length && g.teacherId === session.id?`:
+    - `[no]` → `throw ForbiddenError` → final.
+  - Rombo `¿g.period.isActive?`:
+    - `[no]` → `throw PeriodoCerradoError` → final.
+  - Rombo `¿startDate ≤ fechaLimite ≤ endDate?`:
+    - `[no]` → `throw FechaInvalidaError("dentro del periodo activo")` → final.
+- Rectángulo: `status = modo==="PUBLICAR" ? PUBLICADO : BORRADOR → prisma.$transaction inicio`.
 - Región de expansión `«iterative»` sobre `groups`:
-  - Rectángulo: `tx.assignment.create({groupId, titulo, instrucciones, tipo, status, fechaLimite, rubrica})` → `assignment.id`.
-  - Rombo: `¿modo === "PUBLICAR" && enrollments.length > 0?`.
-    - `[sí]` → rectángulo: `tx.submission.createMany({assignmentId, studentId, status:PENDIENTE, intento:1}) × enrollments`.
+  - Rectángulo: `tx.assignment.create({groupId, titulo, instrucciones, tipo, status, fechaLimite, rubrica}) → assignment.id`.
+  - Rombo `¿modo === "PUBLICAR" && enrollments.length > 0?`:
+    - `[sí]` → `tx.submission.createMany({assignmentId, studentId, status:PENDIENTE, intento:1}) × enrollments`.
     - `[no]` → continuar.
-- Salida → rectángulo `commit transacción`. Línea continua con flecha → rombo.
-- Rombo: `¿modo === "PUBLICAR"?`.
-  - `[no]` → ir a rectángulo `return result {asignacionesCreadas, submissionsCreadas:0, notificacionesEnviadas:0}`.
+- Rectángulo: `commit transacción`.
+- Rombo `¿modo === "PUBLICAR"?`:
+  - `[no]` → rectángulo `return result {asignacionesCreadas, submissionsCreadas:0, notificacionesEnviadas:0}`.
   - `[sí]` → barra gruesa (fork) → región `«concurrent»` sobre `notifPayloads`:
     - Rectángulo con lado saliente convexo (evento emitido): `notificarAlumnos({assignmentId, groupId, studentIds, titulo}) → console.log("[CU-09][notificacion]", payload)` (best-effort).
-    - Rombo `¿fallo?`.
-      - `[sí]` → rectángulo `console.error; +0 a contador`.
-      - `[no]` → rectángulo `+studentIds.length`.
+    - Rombo `¿fallo?`:
+      - `[sí]` → `console.error; +0 a contador`.
+      - `[no]` → `+studentIds.length`.
   - Salida → barra gruesa (join) → rectángulo: `return result {asignacionesCreadas, submissionsCreadas, notificacionesEnviadas}`.
-- Línea continua con flecha → rectángulo: `Render ConfirmacionPublicacion (n asignaciones, n submissions, n notificaciones)`. Línea continua con flecha → nodo final (círculo blanco con negro concéntrico).
+- Rectángulo: `Render ConfirmacionPublicacion (n asignaciones, n submissions, n notificaciones)`.
+- Nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Profesor` contiene: nodo inicial, navegar a `/profesor/asignaciones/nueva`, selección de grupos, llenado de formulario (tipo, título, instrucciones, fechaLimite, rúbrica), elección modo BORRADOR|PUBLICAR, click "Guardar".

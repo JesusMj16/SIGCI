@@ -16,53 +16,45 @@ Archivos reales:
 
 ## 1. Diagrama de Actividades
 
-- Figura: círculo negro (inicio). Línea continua con flecha → siguiente.
-- Rectángulo redondeado: `Profesor navega a /profesor/calificar`. Línea continua con flecha → siguiente.
-- Rectángulo redondeado: `page.tsx: getGruposProfesorAction()` → `dal.obtenerGruposDelProfesor()`. Línea continua con flecha → rombo.
-- Rombo: `¿rol === PROFESOR?`.
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Profesor navega a /profesor/calificar; page.tsx ejecuta getGruposProfesorAction() → dal.obtenerGruposDelProfesor()`.
+- Rombo `¿rol === PROFESOR?`:
   - `[no]` → `redirect("/")` → nodo final.
   - `[sí]` → siguiente.
-- Rectángulo: `prisma.group.findMany({teacherId:session.id, period.isActive:true, include:{subject, period, _count.enrollments}})`. Línea continua con flecha → siguiente.
-- Rectángulo: `Renderizar Container con GrupoDTO[]`. Línea continua con flecha → siguiente.
-- Rectángulo: `Profesor elige grupo (GrupoSelector)`. Línea continua con flecha → siguiente.
-- Rectángulo: `getAsignacionesGrupoAction(groupId)` → DAL `obtenerAsignacionesDelGrupo`. Línea continua con flecha → siguiente.
-- Rectángulo: `Profesor elige assignment (AsignacionSelector)`. Línea continua con flecha → siguiente.
-- Rectángulo: `getAlumnosGrupoAction(groupId, assignmentId)` → DAL `obtenerAlumnosDelGrupo`. Línea continua con flecha → rombo.
-- Rombo: `¿group.teacherId === session.id?`.
-  - `[no]` → rectángulo `throw ForbiddenError` → nodo final.
-  - `[sí]` → siguiente rombo.
-- Rombo: `¿group.period.isActive?`.
-  - `[no]` → rectángulo `throw PeriodoCerradoError` → nodo final.
-  - `[sí]` → siguiente rombo.
-- Rombo: `¿enrollments.length > 0?`.
-  - `[no]` → rectángulo `throw GrupoSinAlumnosError` → nodo final.
+- Rectángulo: `prisma.group.findMany({teacherId, period.isActive:true, include:{subject, period, _count.enrollments}}) → Render Container con GrupoDTO[]`.
+- Rectángulo: `Profesor elige grupo (GrupoSelector) → getAsignacionesGrupoAction(groupId) → DAL obtenerAsignacionesDelGrupo`.
+- Rectángulo: `Profesor elige assignment (AsignacionSelector) → getAlumnosGrupoAction(groupId, assignmentId) → DAL obtenerAlumnosDelGrupo`.
+- Rombo `¿group.teacherId === session.id?`:
+  - `[no]` → `throw ForbiddenError` → final.
   - `[sí]` → siguiente.
-- Rectángulo: `Render TablaCaptura con AlumnoEnGrupoDTO[] (incluye gradeActual)`. Línea continua con flecha → siguiente.
-- Rectángulo: `Profesor captura valores (0..10) + retroalimentación opcional`. Línea continua con flecha → siguiente.
-- Rectángulo: `Click "Guardar" → registrarCalificacionesAction(input)`. Línea continua con flecha → siguiente rombo.
-- Rombo: `¿todas valor ∈ [0,10] || null?`.
-  - `[no]` → rectángulo `throw FueraDeRangoError(valor)` → flecha al final.
+- Rombo `¿group.period.isActive?`:
+  - `[no]` → `throw PeriodoCerradoError` → final.
   - `[sí]` → siguiente.
-- Barra gruesa (fork) — preparación bulk. Líneas continuas con flecha hacia:
+- Rombo `¿enrollments.length > 0?`:
+  - `[no]` → `throw GrupoSinAlumnosError` → final.
+  - `[sí]` → siguiente.
+- Rectángulo: `Render TablaCaptura con AlumnoEnGrupoDTO[] (incluye gradeActual); profesor captura valores 0..10 + retroalimentación; click "Guardar" → registrarCalificacionesAction(input)`.
+- Rombo `¿todas valor ∈ [0,10] || null?`:
+  - `[no]` → `throw FueraDeRangoError(valor)` → final.
+  - `[sí]` → siguiente.
+- Barra gruesa (fork) — preparación bulk → dos actividades concurrentes:
   - Rectángulo: `prisma.submission.findMany por (assignmentId, studentIds) — último intento`.
-  - Rectángulo: `Filtrar entradas con valor !== null`.
-- Barra gruesa (join). Línea continua con flecha → siguiente.
-- Rectángulo: `prisma.$transaction inicio`. Línea continua con flecha → región de expansión.
-- Región de expansión etiqueta `«iterative»` sobre `entradasValidas`. Dentro:
-  - Rombo `¿submission existente?`.
-    - `[sí]` → rectángulo `tx.submission.update({status:CALIFICADO})`.
-    - `[no]` → rectángulo `tx.submission.create({assignmentId, studentId, status:CALIFICADO, intento:1})`.
-  - Rombo `¿grade existente por submissionId?`.
-    - `[sí]` → rectángulo `tx.grade.update({valor:Prisma.Decimal, retroalimentacion?})` → `gradesActualizadas++`.
-    - `[no]` → rectángulo `tx.grade.create({submissionId, studentId, valor, retroalimentacion})` → `gradesCreadas++`.
-- Salida de región → línea continua con flecha → rectángulo `commit transacción`. Línea continua con flecha → siguiente.
+  - Rectángulo: `Filtrar entradasValidas con valor !== null` (registro parcial: respeta null = "no calificar").
+- Barra gruesa (join) → rectángulo: `prisma.$transaction inicio`.
+- Región de expansión `«iterative»` sobre `entradasValidas`:
+  - Rombo `¿submission existente?`:
+    - `[sí]` → `tx.submission.update({status:CALIFICADO})`.
+    - `[no]` → `tx.submission.create({assignmentId, studentId, status:CALIFICADO, intento:1})`.
+  - Rombo `¿grade existente por submissionId?`:
+    - `[sí]` → `tx.grade.update({valor:Prisma.Decimal, retroalimentacion?})` → `gradesActualizadas++`.
+    - `[no]` → `tx.grade.create({submissionId, studentId, valor, retroalimentacion})` → `gradesCreadas++`.
+- Rectángulo: `commit transacción`.
 - Rectángulo con lado saliente convexo (evento emitido): `Por cada entrada: prisma.notification.create({userId:studentId, titulo:"Nueva calificación registrada", leida:false})` — best-effort.
-- Línea continua con flecha → rectángulo con lado saliente convexo: `prisma.notification.create({userId:session.id, titulo:"Auditoría: Registro de calificaciones", leida:true})`.
-- Línea continua con flecha → rectángulo: `return {gradesCreadas, gradesActualizadas, notificacionesEnviadas, auditoriaRegistrada, warnings}`.
-- Línea continua con flecha → rectángulo: `Render ResultadoRegistro con contadores y warnings`.
-- Línea continua con flecha → nodo final (círculo blanco con negro concéntrico).
-
-Flujo alternativo (registro parcial): rombo después de "captura" `¿algunas entradas valor===null?` — `[sí]` línea continua con guarda → "filtrar entradas válidas" del fork.
+- Rectángulo con lado saliente convexo: `prisma.notification.create({userId:session.id, titulo:"Auditoría: Registro de calificaciones", leida:true})`.
+- Rectángulo: `return {gradesCreadas, gradesActualizadas, notificacionesEnviadas, auditoriaRegistrada, warnings} → Render ResultadoRegistro`.
+- Nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Profesor` contiene: nodo inicial, navegar a `/profesor/calificar`, selección de grupo, selección de assignment, captura de valores 0..10, click "Guardar".

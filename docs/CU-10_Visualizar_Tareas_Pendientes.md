@@ -14,45 +14,39 @@ Archivos reales:
 
 ## 1. Diagrama de Actividades
 
-- Círculo negro (inicio) → línea continua con flecha → siguiente.
-- Rectángulo: `Alumno navega a /alumno/tareas`. Línea continua con flecha → siguiente.
-- Rectángulo: `page.tsx: await tieneInscripcionesActivas()`. Línea continua con flecha → rombo.
-- Rombo: `¿inscrito en periodo activo?`.
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Alumno navega a /alumno/tareas; page.tsx ejecuta await tieneInscripcionesActivas()`.
+- Rombo `¿inscrito en periodo activo?`:
   - `[no]` → rectángulo `Render EmptyState "No estás inscrito en materias del periodo en curso"` → nodo final.
   - `[sí]` → siguiente.
-- Rectángulo: `await getTareasPendientesAlumno()` (DAL, cache(), server-only). Línea continua con flecha → rombo.
-- Rombo: `¿result.ok?`.
+- Rectángulo: `await getTareasPendientesAlumno()` (DAL, cache(), server-only).
+- Rombo `¿result.ok?`:
   - `[no]` → rectángulo `Render EmptyState "Ocurrió un error al cargar tus tareas"` → nodo final.
   - `[sí]` → siguiente.
-- Rectángulo: `prisma.submission.findMany({studentId:userId, status:"PENDIENTE", assignment:{status:"PUBLICADO", group:{period.isActive:true, enrollments.some(studentId)}}, include:{assignment.group.subject}, orderBy:{assignment.fechaLimite:asc}})`. Línea continua con flecha → siguiente.
+- Rectángulo: `prisma.submission.findMany({studentId:userId, status:"PENDIENTE", assignment:{status:"PUBLICADO", group:{period.isActive:true, enrollments.some(studentId)}}, include:{assignment.group.subject}, orderBy:{assignment.fechaLimite:asc}})`.
 - Región de expansión `«iterative»` sobre `submissions`:
-  - Rectángulo: `limite = s.assignment.fechaLimite; now=Date.now()`.
-  - Rectángulo: `diasRestantes = ceil((limite-now)/MS_DAY)`.
-  - Rectángulo: `vencida = limite < now`.
-  - Rombo: `¿diasRestantes < 2?`.
-    - `[sí]` → rectángulo `urgencia="alta"`.
-    - `[no]` → siguiente rombo.
-  - Rombo: `¿diasRestantes < 7?`.
-    - `[sí]` → rectángulo `urgencia="media"`.
-    - `[no]` → rectángulo `urgencia="baja"`.
-  - Rombo: `¿vencida?`.
-    - `[sí]` → rectángulo `estado="VENCIDA"`.
-    - `[no]` → rectángulo `estado="PENDIENTE"`.
+  - Rectángulo: `limite = s.assignment.fechaLimite; now=Date.now(); diasRestantes = ceil((limite-now)/MS_DAY); vencida = limite < now`.
+  - Rombo `¿diasRestantes < 2?`:
+    - `[sí]` → `urgencia="alta"`.
+    - `[no]` → rombo `¿diasRestantes < 7?`:
+      - `[sí]` → `urgencia="media"`.
+      - `[no]` → `urgencia="baja"`.
+  - Rombo `¿vencida?`:
+    - `[sí]` → `estado="VENCIDA"` (comentario borde punteado: `"No ocultar; permanecen visibles — regla CU-10 #4"`).
+    - `[no]` → `estado="PENDIENTE"`.
   - Rectángulo: `Construir TareaPendienteDTO{submissionId, assignmentId, titulo, tipo, fechaLimite ISO, diasRestantes, urgencia, estado, materia, grupo}`.
-- Salida de región → rectángulo: `return ok(tareas[])`. Línea continua con flecha → siguiente.
-- Rectángulo: `Render DashboardHero "Tareas pendientes" + TareasPendientesList`. Línea continua con flecha → siguiente.
-- Región de expansión `«iterative»` sobre `tareas`:
-  - Rectángulo: `Render TareaCard con badge urgencia (rojo/amarillo/verde) + chip estado`.
-- Salida → rombo (flujos alternativos cliente).
-- Rombo: `¿usuario filtra/ordena?`.
-  - `[filtra materia]` → rectángulo `filtrarPorMateria(tareas, materiaId)` (lib/dal/tareas/helpers.ts) → de vuelta a render lista.
-  - `[ordena]` → rectángulo `ordenarTareas(tareas, "fecha"|"materia"|"estado"|"tipo")` → de vuelta a render lista.
-  - `[selecciona tarea]` → rectángulo con lado saliente convexo (evento emitido): `Link /alumno/tareas/[assignmentId]`.
-    - Línea continua con flecha → rectángulo: `getTareaDetalleAlumno(assignmentId)` → rombo `¿result.ok?` con guarda `[NOT_FOUND]` → rectángulo `notFound()`, `[ok]` → rectángulo `Render detalle: instrucciones + rubrica + fecha`. Línea continua con flecha → nodo final.
+- Rectángulo: `return ok(tareas[]) → Render DashboardHero "Tareas pendientes" + TareasPendientesList`.
+- Región de expansión `«iterative»` sobre `tareas`: rectángulo `Render TareaCard con badge urgencia (rojo/amarillo/verde) + chip estado`.
+- Rombo (flujos alternativos cliente) `¿usuario filtra/ordena/selecciona?`:
+  - `[filtra materia]` → `filtrarPorMateria(tareas, materiaId)` (helpers.ts) → vuelta a render lista.
+  - `[ordena]` → `ordenarTareas(tareas, "fecha"|"materia"|"estado"|"tipo")` → vuelta a render lista.
+  - `[selecciona tarea]` → rectángulo con lado saliente convexo (evento emitido): `Link /alumno/tareas/[assignmentId] → getTareaDetalleAlumno(assignmentId)` → rombo `¿result.ok?`:
+    - `[NOT_FOUND]` → `notFound()` → final.
+    - `[ok]` → `Render detalle: instrucciones + rubrica + fecha` → final.
   - `[no acción]` → nodo final.
 - Nodo final (círculo blanco con negro concéntrico).
-
-Excepción "Tareas vencidas no se ocultan": observación gráfica — la rama `[vencida]` no elimina la tarea de la lista; se renderiza con chip estado "VENCIDA". Anotar como comentario (rectángulo de borde punteado) sobre el rectángulo `estado="VENCIDA"` con texto: `"No ocultar; permanecen visibles (regla CU-10 #4)"`.
 
 Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Alumno` contiene: nodo inicial, navegar a `/alumno/tareas`, filtrar por materia, cambiar orden, click sobre `TareaCard`, navegar a `/alumno/tareas/[assignmentId]`.

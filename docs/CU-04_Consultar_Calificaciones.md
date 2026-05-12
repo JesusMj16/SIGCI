@@ -14,39 +14,33 @@ Archivos reales:
 
 ## 1. Diagrama de Actividades
 
-- Figura: círculo negro (inicio). Línea continua con flecha apuntando a la siguiente actividad.
-- Figura: rectángulo redondeado; texto: `Alumno navega a /alumno/calificaciones[?periodo=ID]`. Línea continua con flecha.
-- Figura: rectángulo redondeado; texto: `page.tsx: await searchParams → {periodo}`. Línea continua con flecha.
-- Figura: barra gruesa horizontal (fork — Promise.all). Líneas continuas con flecha hacia:
-  - Rectángulo redondeado: `getCalificacionesAction(periodo)`.
-  - Rectángulo redondeado: `getPeriodosAlumnoAction()`.
-- De ambos, línea continua con flecha a barra gruesa (join).
-- Línea continua con flecha apuntando a rectángulo redondeado: `obtenerCalificacionesDelAlumno(periodoId?)`. Línea continua con flecha a rombo.
-- Figura: rombo; texto: `¿getAuthenticatedUser([ALUMNO])?`.
-  - `[no rol]` línea continua con flecha → `redirect("/")` → nodo final.
-  - `[sí]` línea continua con flecha → siguiente actividad.
-- Figura: rectángulo redondeado; texto: `prisma.user.findUniqueOrThrow({id, select:{nombre,apellidos,matricula}})`. Línea continua con flecha a rombo.
-- Figura: rombo; texto: `¿periodoId provisto?`.
-  - `[sí]` → rectángulo `prisma.period.findUnique({id:periodoId})` → rombo `¿exists?` → `[no]` → rectángulo `throw PeriodoNoEncontradoError` → flecha al final.
-  - `[no]` → siguiente actividad.
-- Figura: rectángulo redondeado; texto: `prisma.enrollment.findMany({studentId, group:{period: isActive | id}, include:{group.subject, group.period, group.assignments(PUBLICADO).submissions(studentId).grade}})`. Línea continua con flecha a rombo.
-- Figura: rombo; texto: `¿enrollments.length === 0?`.
-  - `[sí]` → rectángulo `throw NoMateriasInscritasError` → flecha al final.
-  - `[no]` → siguiente actividad.
-- Figura: región de expansión etiquetada `«iterative»` sobre `enrollments`. Dentro:
-  - Rectángulo `Agrupar por period.id en periodMap`.
-  - Rectángulo `Para cada assignment: tomar submissions[0].grade si existe`.
-  - Rectángulo `Construir GradeDetailDTO`.
-  - Rectángulo `Calcular promedio = sum(valor)/n, Math.round(*100)/100`.
-- Saliendo de la región, línea continua con flecha apuntando a un rectángulo con lado saliente convexo (evento emitido): `prisma.notification.create({titulo:"Consulta de calificaciones", leida:true}) — auditoría`.
-- Línea continua con flecha a rombo; texto: `¿try OK?`.
-  - `[no]` línea continua con flecha → rectángulo `console.warn; consultaRegistrada=false` (no bloquea).
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Alumno navega a /alumno/calificaciones[?periodo=ID]; page.tsx ejecuta await searchParams → {periodo}`.
+- Barra gruesa (fork — Promise.all) → dos actividades concurrentes:
+  - Rectángulo: `getCalificacionesAction(periodo)`.
+  - Rectángulo: `getPeriodosAlumnoAction()`.
+- Barra gruesa (join) → rectángulo: `obtenerCalificacionesDelAlumno(periodoId?)`.
+- Rombo `¿getAuthenticatedUser([ALUMNO])?`:
+  - `[no rol]` → `redirect("/")` → nodo final.
+  - `[sí]` → siguiente.
+- Rectángulo: `prisma.user.findUniqueOrThrow({id, select:{nombre,apellidos,matricula}})`.
+- Rombo `¿periodoId provisto?`:
+  - `[sí]` → rectángulo `prisma.period.findUnique({id:periodoId})` → rombo `¿exists?` → `[no]` → rectángulo `throw PeriodoNoEncontradoError` → final.
+  - `[no]` → siguiente.
+- Rectángulo: `prisma.enrollment.findMany({studentId, group.period: isActive | id, include:{group.subject, group.period, group.assignments(PUBLICADO).submissions(studentId).grade}})`.
+- Rombo `¿enrollments.length === 0?`:
+  - `[sí]` → rectángulo `throw NoMateriasInscritasError` → final.
+  - `[no]` → siguiente.
+- Región de expansión `«iterative»` sobre `enrollments`: rectángulo `Agrupar por period.id en periodMap; por assignment tomar submissions[0].grade; construir GradeDetailDTO; promedio = Math.round(sum(valor)/n *100)/100`.
+- Rectángulo con lado saliente convexo (evento emitido): `prisma.notification.create({titulo:"Consulta de calificaciones", leida:true}) — auditoría best-effort`.
+- Rombo `¿try OK?`:
+  - `[no]` → rectángulo `console.warn; consultaRegistrada=false`.
   - `[sí]` → rectángulo `consultaRegistrada=true`.
-- Unen líneas continuas en rectángulo: `return CalificacionesResultDTO{ alumno, periodos ordenados desc, consultaRegistrada }`.
-- Línea continua con flecha al Container cliente: `CalificacionesContainer recibe result + periodos`.
-- Figura: rectángulo redondeado; texto: `Render PeriodSelector + GradesFilter + SubjectCard[] por materia`. Línea continua con flecha.
-- Flujo alternativo (filtros): rombo `¿usuario filtra/cambia periodo?`.
-  - `[sí]` línea continua → rectángulo `router.push("?periodo=ID")` → vuelta al inicio (línea continua con flecha hacia la primera actividad del page).
+- Rectángulo: `return CalificacionesResultDTO{alumno, periodos desc, consultaRegistrada} → CalificacionesContainer recibe result+periodos → Render PeriodSelector + GradesFilter + SubjectCard[]`.
+- Rombo (flujo alternativo) `¿usuario filtra/cambia periodo?`:
+  - `[sí]` → rectángulo `router.push("?periodo=ID")` → vuelta a la primera actividad del page.
   - `[no]` → nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) para particionar el diagrama:
