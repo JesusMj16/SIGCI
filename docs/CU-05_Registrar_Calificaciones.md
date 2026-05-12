@@ -64,6 +64,16 @@ Archivos reales:
 
 Flujo alternativo (registro parcial): rombo después de "captura" `¿algunas entradas valor===null?` — `[sí]` línea continua con guarda → "filtrar entradas válidas" del fork.
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Profesor` contiene: nodo inicial, navegar a `/profesor/calificar`, selección de grupo, selección de assignment, captura de valores 0..10, click "Guardar".
+- Pista `Page (profesor/calificar/page.tsx)` (Server Component) contiene: precarga vía `getGruposProfesorAction()`.
+- Pista `Cliente (_components)` contiene: `RegistrarCalificacionesContainer`, `GrupoSelector`, `AsignacionSelector`, `TablaCaptura`, `ResultadoRegistro`, hook `useCalificarFlow.ts`.
+- Pista `Server Actions (lib/actions/registrarCalificaciones.actions.ts)` contiene: `getGruposProfesorAction`, `getAsignacionesGrupoAction`, `getAlumnosGrupoAction`, `registrarCalificacionesAction`, mapeo de excepciones tipadas → `errorCode`.
+- Pista `DAL (lib/dal/registrarCalificaciones.ts)` contiene: `obtenerGruposDelProfesor`, `obtenerAsignacionesDelGrupo`, `obtenerAlumnosDelGrupo`, ownership check, validación de rango `[0,10]`, pre-fetch bulk de submissions, lanzamiento de `$transaction`, notificaciones best-effort, auditoría.
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser([UserRole.PROFESOR])`.
+- Pista `Prisma $transaction` contiene: región de expansión `«iterative»` con `tx.submission.update | create`, `tx.grade.findUnique`, `tx.grade.update | create`, commit.
+- Pista `Prisma/PostgreSQL` contiene: `prisma.group.findMany/findUnique`, `prisma.enrollment.findMany`, `prisma.grade.findMany`, `prisma.assignment.findMany`, `prisma.submission.findMany`, `prisma.notification.create`.
+
 ---
 
 ## 2. Diagrama de Secuencia

@@ -49,6 +49,16 @@ Archivos reales:
 
 Flujo alternativo "día específico": rombo `¿filtroDía aplicado?` después de render ScheduleGrid → `[sí]` → rectángulo `ScheduleGrid filtra DTO por DayId` → de vuelta a render.
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Usuario (Alumno/Profesor)` contiene: nodo inicial, navegar a `/alumno/horario | /profesor/horario`, "Agregar a calendario", filtrar por día específico.
+- Pista `Page (horario/page.tsx)` (Server Component, una por rol) contiene: invocación de `getMyStudentSchedule()` o `getMyTeacherSchedule()`, render de `<ScheduleGrid>`, `Alert` de fallback.
+- Pista `DAL (lib/dal/horarios.ts)` contiene: `resolvePeriod`, branching ALUMNO/PROFESOR, `toClassDTOs`, `EMPTY` return cuando no hay periodo.
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser(["ALUMNO"|"PROFESOR"])`.
+- Pista `Presentación (lib/presentation/horario.ts)` contiene: `isValidDay`, `isValidTime`, construcción de `ScheduleClassDTO`, constante `DAYS`.
+- Pista `Prisma/PostgreSQL` contiene: `prisma.period.findFirst`, `prisma.enrollment.findMany` (alumno), `prisma.group.findMany` (profesor).
+- Pista `Cliente (ScheduleGrid.tsx)` contiene: render tabla semanal Lun..Sáb, filtro por día, botón "Agregar a calendario", descarga del Blob.
+- Pista `ICS (lib/presentation/horario_ics.ts)` contiene: `buildIcsForSchedule`, generación VTIMEZONE `America/Mexico_City`, VEVENT `FREQ=WEEKLY;BYDAY=...;UNTIL=endDate`, `escapeText`, line folding 75 octetos.
+
 ---
 
 ## 2. Diagrama de Secuencia

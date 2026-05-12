@@ -49,6 +49,15 @@ Archivos reales:
   - `[sí]` línea continua → rectángulo `router.push("?periodo=ID")` → vuelta al inicio (línea continua con flecha hacia la primera actividad del page).
   - `[no]` → nodo final (círculo blanco con negro concéntrico).
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Alumno` contiene: nodo inicial, navegar a `/alumno/calificaciones`, "usuario filtra/cambia periodo".
+- Pista `Page (calificaciones/page.tsx)` (Server Component) contiene: `await searchParams`, barra fork/join de `Promise.all`, invocación a las dos Server Actions.
+- Pista `Server Actions (lib/actions/calificaciones.actions.ts)` contiene: `getCalificacionesAction(periodo)`, `getPeriodosAlumnoAction()`, mapeo de excepciones tipadas → `errorCode`.
+- Pista `DAL (lib/dal/grades.ts)` contiene: `obtenerCalificacionesDelAlumno`, validación de `periodoId`, agrupación por periodo, cálculo de promedio, auditoría `notification.create`.
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser([UserRole.ALUMNO])`.
+- Pista `Prisma/PostgreSQL` contiene: `prisma.user.findUniqueOrThrow`, `prisma.period.findUnique`, `prisma.enrollment.findMany`, `prisma.notification.create`.
+- Pista `Cliente (_components)` contiene: `CalificacionesContainer`, `PeriodSelector`, `GradesFilter`, `SubjectCard[]`, `router.push("?periodo=ID")`.
+
 ---
 
 ## 2. Diagrama de Secuencia
