@@ -13,565 +13,319 @@ import bcrypt from "bcryptjs";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-async function main() {
-  const jesus = await prisma.user.upsert({
-    where: { matricula: "2023020223" },
-    update: {},
-    create: {
-      matricula: "2023020223",
-      nombre: "Jesus Alfonso",
-      apellidos: "Morales Jaimes",
-      email: "jesusmo03182005@gmail.com",
-      passwordHash: await bcrypt.hash("b1e2i3s4", 10),
-      carrera: "Ingenieria en Computacion",
-      role: UserRole.ALUMNO,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  const hermes = await prisma.user.upsert({
-    where: { matricula: "2023020111" },
-    update: {},
-    create: {
-      matricula: "2023020111",
-      nombre: "Hermes",
-      apellidos: "Aguilar Villa",
-      email: "auvh050615@gs.utm.mx",
-      passwordHash: await bcrypt.hash("pugulso123&", 10),
-      carrera: "Ingenieria en Computacion",
-      role: UserRole.ALUMNO,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  const esmeralda = await prisma.user.upsert({
-    where: { matricula: "2023020112" },
-    update: {},
-    create: {
-      matricula: "2023020112",
-      nombre: "Esmeralda",
-      apellidos: "Morales Martinez",
-      email: "mome050402@gs.utm.mx",
-      passwordHash: await bcrypt.hash("chivas123", 10),
-      carrera: "Ingenieria en Computacion",
-      role: UserRole.ALUMNO,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  const admin = await prisma.user.upsert({
-    where: { matricula: "admin" },
-    update: {},
-    create: {
-      matricula: "admin",
-      nombre: "Admin",
-      apellidos: "Admin",
-      email: "admin@utm.mx",
-      passwordHash: await bcrypt.hash("admin123", 10),
-      carrera: "Administracion",
-      role: UserRole.ADMIN,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  const profesor = await prisma.user.upsert({
-    where: { matricula: "profesor" },
-    update: {},
-    create: {
-      matricula: "profesor",
-      nombre: "Profesor",
-      apellidos: "Profesor",
-      email: "profesor@utm.mx",
-      passwordHash: await bcrypt.hash("profesor123", 10),
-      carrera: "Ingenieria en Computacion",
-      role: UserRole.PROFESOR,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  const carreraIC = await prisma.carrera.upsert({
-    where: { codigo: "IC" },
-    update: {},
-    create: { nombre: "Ingenieria en Computacion", codigo: "IC" },
-  });
-
-  const carreraIE = await prisma.carrera.upsert({
-    where: { codigo: "IE" },
-    update: {},
-    create: { nombre: "Ingenieria en Electronica", codigo: "IE" },
-  });
-
-  const carreraAdmin = await prisma.carrera.upsert({
-    where: { codigo: "ADM" },
-    update: {},
-    create: { nombre: "Administracion", codigo: "ADM" },
-  });
-
-  await prisma.user.update({ where: { matricula: "2023020223" }, data: { carreraId: carreraIC.id } });
-  await prisma.user.update({ where: { matricula: "2023020111" }, data: { carreraId: carreraIC.id } });
-  await prisma.user.update({ where: { matricula: "2023020112" }, data: { carreraId: carreraIC.id } });
-  await prisma.user.update({ where: { matricula: "admin" },      data: { carreraId: carreraAdmin.id } });
-  await prisma.user.update({ where: { matricula: "profesor" },   data: { carreraId: carreraIC.id } });
-
-  const tecnico = await prisma.user.upsert({
-    where: { matricula: "tecnico" },
-    update: {},
-    create: {
-      matricula: "tecnico",
-      nombre: "Carlos",
-      apellidos: "Lopez Hernandez",
-      email: "tecnico@utm.mx",
-      passwordHash: await bcrypt.hash("tecnico123", 10),
-      carrera: "Ingenieria en Electronica",
-      carreraId: carreraIE.id,
-      role: UserRole.TECNICO,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  const jefeCarrera = await prisma.user.upsert({
-    where: { matricula: "jefecarrera" },
-    update: {},
-    create: {
-      matricula: "jefecarrera",
-      nombre: "Maria",
-      apellidos: "Garcia Ruiz",
-      email: "jefe.carrera@utm.mx",
-      passwordHash: await bcrypt.hash("jefe123", 10),
-      carrera: "Ingenieria en Computacion",
-      carreraId: carreraIC.id,
-      role: UserRole.JEFE_CARRERA,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  console.log({ jesus, hermes, esmeralda, admin, profesor, tecnico, jefeCarrera });
-  console.log("Carreras:", { carreraIC, carreraIE, carreraAdmin });
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // CU-04 — ConsultarCalificaciones
-  // ══════════════════════════════════════════════════════════════════════════
-
-  console.log("\nAgregando datos CU-04...");
-
-  // Alumno sin materias — Prueba 4 CU-04
-  await prisma.user.upsert({
-    where: { matricula: "sinmaterias" },
-    update: {},
-    create: {
-      matricula: "sinmaterias",
-      nombre: "Luis",
-      apellidos: "Sin Materias",
-      email: "sinmaterias@utm.mx",
-      passwordHash: await bcrypt.hash("test123", 10),
-      carrera: "Ingenieria en Computacion",
-      carreraId: carreraIC.id,
-      role: UserRole.ALUMNO,
-      status: UserStatus.ACTIVO,
-    },
-  });
-
-  // Materias
-  const matCalculo = await prisma.subject.upsert({
-    where: { codigo: "MAT101" },
-    update: {},
-    create: { nombre: "Calculo Diferencial", codigo: "MAT101", creditos: 5 },
-  });
-
-  const matFisica = await prisma.subject.upsert({
-    where: { codigo: "FIS101" },
-    update: {},
-    create: { nombre: "Fisica General", codigo: "FIS101", creditos: 4 },
-  });
-
-  const matProg = await prisma.subject.upsert({
-    where: { codigo: "PRG101" },
-    update: {},
-    create: { nombre: "Fundamentos de Programacion", codigo: "PRG101", creditos: 5 },
-  });
-
-  // Periodos
-  const periodoActual = await prisma.period.upsert({
-    where: { id: "periodo-2024b" },
-    update: { isActive: true },
-    create: { id: "periodo-2024b", nombre: "Agosto-Diciembre 2024", startDate: new Date("2024-08-01"), endDate: new Date("2024-12-15"), isActive: true },
-  });
-
-  const periodoAnterior = await prisma.period.upsert({
-    where: { id: "periodo-2024a" },
-    update: { isActive: false },
-    create: { id: "periodo-2024a", nombre: "Enero-Junio 2024", startDate: new Date("2024-01-15"), endDate: new Date("2024-06-30"), isActive: false },
-  });
-
-  // Grupos
-  const grupoCalculo = await prisma.group.upsert({
-    where: { id: "group-2024b-MAT101" },
-    update: {},
-    create: { id: "group-2024b-MAT101", nombre: "Grupo A", subjectId: matCalculo.id, teacherId: profesor.id, periodId: periodoActual.id, cupo: 30 },
-  });
-
-  const grupoFisica = await prisma.group.upsert({
-    where: { id: "group-2024b-FIS101" },
-    update: {},
-    create: { id: "group-2024b-FIS101", nombre: "Grupo A", subjectId: matFisica.id, teacherId: profesor.id, periodId: periodoActual.id, cupo: 30 },
-  });
-
-  // Sin grades — Prueba 5 CU-04
-  const grupoProg = await prisma.group.upsert({
-    where: { id: "group-2024b-PRG101" },
-    update: {},
-    create: { id: "group-2024b-PRG101", nombre: "Grupo A", subjectId: matProg.id, teacherId: profesor.id, periodId: periodoActual.id, cupo: 30 },
-  });
-
-  // Periodo anterior — Prueba 2 CU-04
-  const grupoCalculoAnterior = await prisma.group.upsert({
-    where: { id: "group-2024a-MAT101" },
-    update: {},
-    create: { id: "group-2024a-MAT101", nombre: "Grupo A", subjectId: matCalculo.id, teacherId: profesor.id, periodId: periodoAnterior.id, cupo: 30 },
-  });
-
-  // Inscripciones de Jesus en todos los grupos
-  for (const gId of [grupoCalculo.id, grupoFisica.id, grupoProg.id, grupoCalculoAnterior.id]) {
-    await prisma.enrollment.upsert({
-      where: { studentId_groupId: { studentId: jesus.id, groupId: gId } },
-      update: {},
-      create: { studentId: jesus.id, groupId: gId },
-    });
-  }
-
-  // Inscripciones de Hermes y Esmeralda — para CU-05 Prueba 1 (20 alumnos)
-  for (const gId of [grupoCalculo.id, grupoFisica.id, grupoProg.id]) {
-    await prisma.enrollment.upsert({
-      where: { studentId_groupId: { studentId: hermes.id, groupId: gId } },
-      update: {},
-      create: { studentId: hermes.id, groupId: gId },
-    });
-    await prisma.enrollment.upsert({
-      where: { studentId_groupId: { studentId: esmeralda.id, groupId: gId } },
-      update: {},
-      create: { studentId: esmeralda.id, groupId: gId },
-    });
-  }
-
-  // Assignments + Grades para Calculo (CU-04 Pruebas 1 y 3)
-  for (const a of [
-    { id: "asgn-MAT-p1",  titulo: "Parcial 1",      tipo: AssignmentType.EXAMEN,   valor: 9.5 },
-    { id: "asgn-MAT-t1",  titulo: "Tarea Limites",  tipo: AssignmentType.TAREA,    valor: 8.0 },
-    { id: "asgn-MAT-pf",  titulo: "Proyecto Final", tipo: AssignmentType.PROYECTO, valor: 9.0 },
-  ]) {
-    const asgn = await prisma.assignment.upsert({
-      where: { id: a.id },
-      update: {},
-      create: { id: a.id, groupId: grupoCalculo.id, titulo: a.titulo, tipo: a.tipo, status: AssignmentStatus.PUBLICADO, fechaLimite: new Date("2024-11-30") },
-    });
-    const sub = await prisma.submission.upsert({
-      where: { assignmentId_studentId_intento: { assignmentId: asgn.id, studentId: jesus.id, intento: 1 } },
-      update: {},
-      create: { assignmentId: asgn.id, studentId: jesus.id, status: SubmissionStatus.CALIFICADO, intento: 1, submittedAt: new Date("2024-11-10") },
-    });
-    await prisma.grade.upsert({
-      where: { submissionId: sub.id },
-      update: {},
-      create: { submissionId: sub.id, studentId: jesus.id, valor: a.valor, retroalimentacion: "Bien hecho." },
-    });
-  }
-
-  // Assignments + Grades para Fisica (CU-04)
-  for (const a of [
-    { id: "asgn-FIS-p1", titulo: "Parcial 1",    tipo: AssignmentType.EXAMEN, valor: 7.5 },
-    { id: "asgn-FIS-t1", titulo: "Lab Vectores", tipo: AssignmentType.TAREA,  valor: 8.5 },
-  ]) {
-    const asgn = await prisma.assignment.upsert({
-      where: { id: a.id },
-      update: {},
-      create: { id: a.id, groupId: grupoFisica.id, titulo: a.titulo, tipo: a.tipo, status: AssignmentStatus.PUBLICADO, fechaLimite: new Date("2024-11-30") },
-    });
-    const sub = await prisma.submission.upsert({
-      where: { assignmentId_studentId_intento: { assignmentId: asgn.id, studentId: jesus.id, intento: 1 } },
-      update: {},
-      create: { assignmentId: asgn.id, studentId: jesus.id, status: SubmissionStatus.CALIFICADO, intento: 1, submittedAt: new Date("2024-11-10") },
-    });
-    await prisma.grade.upsert({
-      where: { submissionId: sub.id },
-      update: {},
-      create: { submissionId: sub.id, studentId: jesus.id, valor: a.valor, retroalimentacion: "Bien hecho." },
-    });
-  }
-
-  // PRG101 sin grade — Prueba 5 CU-04
-  await prisma.assignment.upsert({
-    where: { id: "asgn-PRG-t1" },
-    update: {},
-    create: { id: "asgn-PRG-t1", groupId: grupoProg.id, titulo: "Tarea 1: Variables", tipo: AssignmentType.TAREA, status: AssignmentStatus.PUBLICADO, fechaLimite: new Date("2024-11-30") },
-  });
-
-  // Periodo anterior — Prueba 2 CU-04
-  const asgnAnt = await prisma.assignment.upsert({
-    where: { id: "asgn-MAT-ant-final" },
-    update: {},
-    create: { id: "asgn-MAT-ant-final", groupId: grupoCalculoAnterior.id, titulo: "Final Calculo", tipo: AssignmentType.EXAMEN, status: AssignmentStatus.PUBLICADO, fechaLimite: new Date("2024-06-20") },
-  });
-  const subAnt = await prisma.submission.upsert({
-    where: { assignmentId_studentId_intento: { assignmentId: asgnAnt.id, studentId: jesus.id, intento: 1 } },
-    update: {},
-    create: { assignmentId: asgnAnt.id, studentId: jesus.id, status: SubmissionStatus.CALIFICADO, intento: 1, submittedAt: new Date("2024-06-18") },
-  });
-  await prisma.grade.upsert({
-    where: { submissionId: subAnt.id },
-    update: {},
-    create: { submissionId: subAnt.id, studentId: jesus.id, valor: 8.8, retroalimentacion: "Excelente desempeno." },
-  });
-  
-
-  console.log("CU-04 listo.");
-  console.log("  Prueba 1,3 -> 2023020223 / b1e2i3s4 -> /alumno/calificaciones");
-  console.log("  Prueba 2   -> misma cuenta -> /alumno/calificaciones?periodo=periodo-2024a");
-  console.log("  Prueba 4   -> sinmaterias  / test123 -> /alumno/calificaciones");
-  console.log("  Prueba 5   -> 2023020223, abrir PRG101 (sin grades)");
-  console.log("  Prueba 7   -> profesor / profesor123 -> /alumno/calificaciones -> redirect");
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // CU-05 — RegistrarCalificaciones
-  // ══════════════════════════════════════════════════════════════════════════
-
-  console.log("\nAgregando datos CU-05...");
-
-  // Assignment sin grades para que el profesor registre — Prueba 1 CU-05
-  await prisma.assignment.upsert({
-    where: { id: "asgn-MAT-p2" },
-    update: {},
-    create: {
-      id: "asgn-MAT-p2",
-      groupId: grupoCalculo.id,
-      titulo: "Parcial 2",
-      tipo: AssignmentType.EXAMEN,
-      status: AssignmentStatus.PUBLICADO,
-      fechaLimite: new Date("2024-12-01"),
-    },
-  });
-
-  await prisma.assignment.upsert({
-    where: { id: "asgn-FIS-p2" },
-    update: {},
-    create: {
-      id: "asgn-FIS-p2",
-      groupId: grupoFisica.id,
-      titulo: "Parcial 2",
-      tipo: AssignmentType.EXAMEN,
-      status: AssignmentStatus.PUBLICADO,
-      fechaLimite: new Date("2024-12-01"),
-    },
-  });
-
-  await prisma.assignment.upsert({
-    where: { id: "asgn-PRG-p1" },
-    update: {},
-    create: {
-      id: "asgn-PRG-p1",
-      groupId: grupoProg.id,
-      titulo: "Parcial 1",
-      tipo: AssignmentType.EXAMEN,
-      status: AssignmentStatus.PUBLICADO,
-      fechaLimite: new Date("2024-12-01"),
-    },
-  });
-
-  // Grupo sin alumnos — Prueba 6 CU-05
-  const matCalculoRef = await prisma.subject.findUnique({ 
-    where: { codigo: "MAT101" } 
-  });
-  
-  const grupoSinAlumnos = await prisma.group.upsert({
-    where: { id: "group-sin-alumnos" },
-    update: {},
-    create: {
-      id: "group-sin-alumnos",
-      nombre: "Grupo Sin Alumnos",
-      subjectId: matCalculoRef!.id,
-      teacherId: profesor.id,      // ya existe en el scope de main()
-      periodId:  periodoActual.id, // ya existe en el scope de main()
-      cupo: 30,
-    },
-  });
-
-  await prisma.assignment.upsert({
-    where: { id: "asgn-sin-alumnos-p1" },
-    update: {},
-    create: {
-      id:          "asgn-sin-alumnos-p1",
-      groupId:     grupoSinAlumnos.id,
-      titulo:      "Parcial 1",
-      tipo:        AssignmentType.EXAMEN,
-      status:      AssignmentStatus.PUBLICADO,
-      fechaLimite: new Date("2024-12-01"),
-    },
-  });
-
-  // aquí va el console.log("CU-05 listo.")
-
-  console.log("CU-05 listo.");
-  console.log("  Prueba 1   -> profesor / profesor123 -> /profesor/calificar -> MAT101 -> Parcial 2 -> calificar a los 3 alumnos");
-  console.log("  Prueba 2   -> mismo flujo, dejar a Hermes sin calificar (registro parcial)");
-  console.log("  Prueba 3   -> seleccionar Parcial 1 (ya tiene grades) -> modificar valor");
-  console.log("  Prueba 4   -> ingresar valor 11 -> error rojo en el input");
-  console.log("  Prueba 5   -> cambiar isActive=false en BD -> mensaje periodo cerrado");
-  console.log("  Prueba 6   -> crear grupo sin enrollments en BD -> mensaje sin alumnos");
-  console.log("  Prueba 7   -> login hermes / pugulso123 -> /profesor/calificar -> redirect");
-  console.log("  Prueba 8   -> desconectar BD despues de guardar -> grade persiste, warning en resultado");
-
-  // --- CU-10: datos academicos para Tareas Pendientes del alumno Hermes ---
-  // Periodo activo (idempotente por nombre).
-  const periodExisting = await prisma.period.findFirst({
-    where: { nombre: "2026-1" },
-  });
-  const period = periodExisting
-    ? periodExisting.isActive
-      ? periodExisting
-      : await prisma.period.update({
-          where: { id: periodExisting.id },
-          data: { isActive: true },
-        })
-    : await prisma.period.create({
-        data: {
-          nombre: "2026-1",
-          startDate: new Date("2026-01-15"),
-          endDate: new Date("2026-06-30"),
-          isActive: true,
-        },
-      });
-
-  // Materias.
-  const programacion = await prisma.subject.upsert({
-    where: { codigo: "PRG-101" },
-    update: {},
-    create: { nombre: "Programacion", codigo: "PRG-101", creditos: 6 },
-  });
-  const baseDatos = await prisma.subject.upsert({
-    where: { codigo: "BD-201" },
-    update: {},
-    create: { nombre: "Base de Datos", codigo: "BD-201", creditos: 6 },
-  });
-
-  // Grupos (idempotente por (subjectId, periodId, nombre)).
-  async function upsertGroup(subjectId: string, nombre: string) {
-    const existing = await prisma.group.findFirst({
-      where: { subjectId, periodId: period.id, nombre },
-    });
-    if (existing) return existing;
-    return prisma.group.create({
-      data: {
-        subjectId,
-        periodId: period.id,
-        teacherId: profesor.id,
-        nombre,
-      },
-    });
-  }
-  const grupoPRG = await upsertGroup(programacion.id, "A");
-  const grupoBD = await upsertGroup(baseDatos.id, "B");
-
-  // Inscripciones de Hermes en ambos grupos.
-  await prisma.enrollment.upsert({
-    where: {
-      studentId_groupId: { studentId: hermes.id, groupId: grupoPRG.id },
-    },
-    update: {},
-    create: { studentId: hermes.id, groupId: grupoPRG.id },
-  });
-  await prisma.enrollment.upsert({
-    where: {
-      studentId_groupId: { studentId: hermes.id, groupId: grupoBD.id },
-    },
-    update: {},
-    create: { studentId: hermes.id, groupId: grupoBD.id },
-  });
-
-  // Tareas con urgencias variadas (relativas a hoy).
-  const dias = (n: number) =>
-    new Date(Date.now() + n * 24 * 60 * 60 * 1000);
-
-  type TareaSeed = {
-    groupId: string;
-    titulo: string;
-    tipo: "TAREA" | "EXAMEN" | "PROYECTO";
-    fechaLimite: Date;
-    instrucciones: string;
-  };
-  const tareasSeed: TareaSeed[] = [
-    {
-      groupId: grupoPRG.id,
-      titulo: "Entrega 1 - Recursion",
-      tipo: "TAREA",
-      fechaLimite: dias(-2),
-      instrucciones: "Implementar funciones recursivas basicas.",
-    },
-    {
-      groupId: grupoPRG.id,
-      titulo: "Examen parcial",
-      tipo: "EXAMEN",
-      fechaLimite: dias(1),
-      instrucciones: "Examen sobre estructuras de datos.",
-    },
-    {
-      groupId: grupoBD.id,
-      titulo: "Modelo Entidad-Relacion",
-      tipo: "PROYECTO",
-      fechaLimite: dias(5),
-      instrucciones: "Disenar el ER de un sistema academico.",
-    },
-    {
-      groupId: grupoBD.id,
-      titulo: "Consultas SQL",
-      tipo: "TAREA",
-      fechaLimite: dias(14),
-      instrucciones: "Resolver 10 consultas SQL del laboratorio.",
-    },
-  ];
-
-  for (const t of tareasSeed) {
-    let assignment = await prisma.assignment.findFirst({
-      where: { groupId: t.groupId, titulo: t.titulo },
-    });
-    if (!assignment) {
-      assignment = await prisma.assignment.create({
-        data: {
-          groupId: t.groupId,
-          titulo: t.titulo,
-          tipo: t.tipo,
-          status: "PUBLICADO",
-          fechaLimite: t.fechaLimite,
-          instrucciones: t.instrucciones,
-        },
-      });
-    } else {
-      assignment = await prisma.assignment.update({
-        where: { id: assignment.id },
-        data: { fechaLimite: t.fechaLimite, status: "PUBLICADO" },
-      });
-    }
-
-    await prisma.submission.upsert({
-      where: {
-        assignmentId_studentId_intento: {
-          assignmentId: assignment.id,
-          studentId: hermes.id,
-          intento: 1,
-        },
-      },
-      update: { status: "PENDIENTE" },
-      create: {
-        assignmentId: assignment.id,
-        studentId: hermes.id,
-        status: "PENDIENTE",
-        intento: 1,
-      },
-    });
-  }
-
-  console.log("CU-10 seed: 1 periodo, 2 materias, 2 grupos, 2 inscripciones, 4 tareas pendientes para Hermes.");
+async function cleanDatabase() {
+  console.log("Limpiando base de datos...");
+  // Eliminar en orden inverso a las dependencias
+  await prisma.accessLog.deleteMany({});
+  await prisma.loan.deleteMany({});
+  await prisma.procedure.deleteMany({});
+  await prisma.notification.deleteMany({});
+  await prisma.announcement.deleteMany({});
+  await prisma.grade.deleteMany({});
+  await prisma.submission.deleteMany({});
+  await prisma.assignment.deleteMany({});
+  await prisma.enrollment.deleteMany({});
+  await prisma.group.deleteMany({});
+  await prisma.credential.deleteMany({});
+  await prisma.period.deleteMany({});
+  await prisma.subject.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.carrera.deleteMany({});
+  console.log("Base de datos limpia.");
 }
 
+async function main() {
+  await cleanDatabase();
+
+  console.log("\nGenerando datos iniciales aleatorios congruentes...");
+
+  const nombres = ["Carlos", "Ana", "Luis", "Maria", "Jorge", "Laura", "Pedro", "Sofia", "Diego", "Lucia", "Fernando", "Valeria"];
+  const apellidos = ["Garcia", "Martinez", "Lopez", "Gonzalez", "Perez", "Rodriguez", "Sanchez", "Ramirez", "Cruz", "Flores", "Hernandez", "Gomez"];
+  
+  const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const randomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+  
+  let matriculaCounter = 1000000000;
+  let emailCounter = 1;
+
+  const defaultPassword = await bcrypt.hash("Password123", 10);
+
+  // 1. Carreras
+  console.log("Creando carreras...");
+  const carreraIC = await prisma.carrera.create({ data: { nombre: "Ingenieria en Computacion", codigo: "IC" } });
+  const carreraIE = await prisma.carrera.create({ data: { nombre: "Ingenieria en Electronica", codigo: "IE" } });
+  const carreraMec = await prisma.carrera.create({ data: { nombre: "Ingenieria Mecatronica", codigo: "IM" } });
+  const carreras = [carreraIC, carreraIE, carreraMec];
+
+  // 2. Administrador de prueba
+  console.log("Creando administrador...");
+  const admin = await prisma.user.create({
+    data: {
+      matricula: "0000000000",
+      nombre: "Admin",
+      apellidos: "Sistema",
+      email: "admin@utm.mx",
+      passwordHash: defaultPassword,
+      carrera: "Administracion",
+      carreraId: carreraIC.id,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVO,
+    }
+  });
+
+  // 3. Profesores
+  console.log("Creando profesores...");
+  const profesores = [];
+  // Profesor conocido para pruebas
+  profesores.push(await prisma.user.create({
+    data: {
+      matricula: "1111111111",
+      nombre: "Profesor",
+      apellidos: "Prueba",
+      email: "profesor@utm.mx",
+      passwordHash: defaultPassword,
+      carrera: "Ingenieria en Computacion",
+      carreraId: carreraIC.id,
+      role: UserRole.PROFESOR,
+      status: UserStatus.ACTIVO,
+    }
+  }));
+
+  for(let i=0; i<9; i++) { // 10 profesores en total
+    const nombre = randomElement(nombres);
+    const apellido = randomElement(apellidos);
+    const matricula = (matriculaCounter++).toString();
+    const prof = await prisma.user.create({
+      data: {
+        matricula,
+        nombre,
+        apellidos: apellido,
+        email: `${nombre.toLowerCase()}.${apellido.toLowerCase()}${emailCounter++}@utm.mx`,
+        passwordHash: defaultPassword,
+        carrera: "Ingenieria en Computacion",
+        carreraId: randomElement(carreras).id,
+        role: UserRole.PROFESOR,
+        status: UserStatus.ACTIVO,
+      }
+    });
+    profesores.push(prof);
+  }
+
+  // 4. Alumnos
+  console.log("Creando alumnos...");
+  const alumnos = [];
+  // Alumno conocido para pruebas
+  alumnos.push(await prisma.user.create({
+    data: {
+      matricula: "2222222222",
+      nombre: "Alumno",
+      apellidos: "Prueba",
+      email: "alumno@gs.utm.mx",
+      passwordHash: defaultPassword,
+      carrera: "Ingenieria en Computacion",
+      carreraId: carreraIC.id,
+      role: UserRole.ALUMNO,
+      status: UserStatus.ACTIVO,
+    }
+  }));
+
+  for(let i=0; i<49; i++) { // 50 alumnos en total
+    const nombre = randomElement(nombres);
+    const apellido = randomElement(apellidos);
+    const matricula = (matriculaCounter++).toString();
+    const alumno = await prisma.user.create({
+      data: {
+        matricula,
+        nombre,
+        apellidos: apellido,
+        email: `${nombre.toLowerCase()}.${apellido.toLowerCase()}${emailCounter++}@gs.utm.mx`,
+        passwordHash: defaultPassword,
+        carrera: "Ingenieria en Computacion",
+        carreraId: randomElement(carreras).id,
+        role: UserRole.ALUMNO,
+        status: UserStatus.ACTIVO,
+      }
+    });
+    alumnos.push(alumno);
+  }
+
+  // 5. Materias
+  console.log("Creando materias...");
+  const materias = [];
+  const subjectNames = [
+    "Redes de Computadoras", "Sistemas Operativos II", "Inteligencia Artificial",
+    "Compiladores", "Estructuras de Datos", "Arquitectura de Computadoras",
+    "Ingenieria de Software", "Bases de Datos", "Programacion Web", "Calculo Diferencial"
+  ];
+  for (let i=0; i<subjectNames.length; i++) {
+    const cod = `MAT${randomInt(100, 999)}`;
+    const mat = await prisma.subject.create({
+      data: {
+        nombre: subjectNames[i],
+        codigo: cod,
+        creditos: randomInt(4, 8)
+      }
+    });
+    materias.push(mat);
+  }
+
+  // 6. Periodo
+  console.log("Creando periodo actual...");
+  const periodoActual = await prisma.period.create({
+    data: {
+      nombre: "Semestre 2026-A",
+      startDate: new Date("2026-02-01"),
+      endDate: new Date("2026-07-15"),
+      isActive: true,
+    }
+  });
+
+  // 7. Grupos y Horarios
+  console.log("Creando grupos y horarios...");
+  const grupos = [];
+  const days = [1, 2, 3, 4, 5]; // Lunes a Viernes
+  for(let i=0; i<20; i++) {
+    const mat = randomElement(materias);
+    const prof = randomElement(profesores);
+    const startH = randomInt(7, 16);
+    const endH = startH + randomInt(1, 2);
+    
+    const g = await prisma.group.create({
+      data: {
+        subjectId: mat.id,
+        teacherId: prof.id,
+        periodId: periodoActual.id,
+        nombre: `Grupo ${String.fromCharCode(65 + randomInt(0, 3))}`, // Grupo A, B, C, D
+        cupo: randomInt(25, 40),
+        day: randomElement(days),
+        startTime: `${startH.toString().padStart(2, '0')}:00`,
+        endTime: `${endH.toString().padStart(2, '0')}:00`,
+        classroom: `Aula ${randomInt(10, 50)}`
+      }
+    });
+    grupos.push(g);
+  }
+
+  // 8. Inscripciones (Enrollments)
+  console.log("Inscribiendo alumnos...");
+  for (const alumno of alumnos) {
+    // Inscribir a cada alumno en 3-6 materias (grupos) asegurando que no se repita el subject
+    const numGrupos = randomInt(3, 6);
+    const gruposAleatorios = [...grupos].sort(() => 0.5 - Math.random());
+    let inscritos = 0;
+    const materiasInscritas = new Set<string>();
+
+    for (const g of gruposAleatorios) {
+      if (inscritos >= numGrupos) break;
+      if (!materiasInscritas.has(g.subjectId)) {
+        await prisma.enrollment.create({
+          data: {
+            studentId: alumno.id,
+            groupId: g.id,
+          }
+        });
+        materiasInscritas.add(g.subjectId);
+        inscritos++;
+      }
+    }
+  }
+
+  // 9. Tareas, Entregas y Calificaciones
+  console.log("Generando tareas y calificaciones...");
+  for (const g of grupos) {
+    const enrollments = await prisma.enrollment.findMany({ where: { groupId: g.id }});
+    if (enrollments.length === 0) continue;
+    
+    // Crear 3 a 5 tareas/examenes por grupo
+    const numTareas = randomInt(3, 5);
+    for(let t=0; t<numTareas; t++) {
+      const tipoRand = Math.random();
+      const tipo = tipoRand > 0.6 ? AssignmentType.EXAMEN : (tipoRand > 0.3 ? AssignmentType.TAREA : AssignmentType.PROYECTO);
+      
+      const asgn = await prisma.assignment.create({
+        data: {
+          groupId: g.id,
+          titulo: `${tipo === AssignmentType.EXAMEN ? 'Examen Parcial' : (tipo === AssignmentType.TAREA ? 'Practica' : 'Proyecto')} ${t+1}`,
+          tipo: tipo,
+          status: AssignmentStatus.PUBLICADO,
+          fechaLimite: new Date(Date.now() + randomInt(-20, 15) * 86400000), // Limite entre -20 dias y +15 dias
+          instrucciones: `Instrucciones generadas aleatoriamente para esta actividad.\n\nEl objetivo principal es aplicar los conocimientos adquiridos en el ${g.nombre}. Por favor, revise el formato requerido antes de enviar.`
+        }
+      });
+
+      // Crear entregas y calificaciones para los alumnos inscritos
+      for (const enr of enrollments) {
+        const isPastDue = asgn.fechaLimite < new Date();
+        // Probabilidad de entregar: 90% si ya venció, 60% si no ha vencido
+        const probEntrega = isPastDue ? 0.90 : 0.60;
+        
+        if (Math.random() < probEntrega) {
+          const isGraded = isPastDue ? Math.random() < 0.9 : Math.random() < 0.3; // Calificado depende si ya pasó
+          const subStatus = isGraded ? SubmissionStatus.CALIFICADO : SubmissionStatus.ENTREGADO;
+          
+          const submittedDate = new Date(asgn.fechaLimite.getTime() - randomInt(1, 3) * 86400000); // 1-3 días antes
+          const sub = await prisma.submission.create({
+            data: {
+              assignmentId: asgn.id,
+              studentId: enr.studentId,
+              status: subStatus,
+              intento: 1,
+              submittedAt: submittedDate > new Date() ? new Date() : submittedDate, // No poner fechas futuras de entrega
+            }
+          });
+          
+          if (isGraded) {
+            await prisma.grade.create({
+              data: {
+                submissionId: sub.id,
+                studentId: enr.studentId,
+                valor: (randomInt(50, 100) / 10).toString(), // Decimal 5.0 a 10.0
+                retroalimentacion: "Revisado. " + (Math.random() > 0.5 ? "Buen trabajo en esta entrega." : "Falta mejorar algunos aspectos técnicos.")
+              }
+            });
+          }
+        } else if (isPastDue) {
+          // Si no entregó y ya venció, se queda pendiente sin calificar o calificado con 0
+          if (Math.random() < 0.4) { // 40% de los profesores le ponen 0 si no entregan
+            const sub = await prisma.submission.create({
+              data: {
+                assignmentId: asgn.id,
+                studentId: enr.studentId,
+                status: SubmissionStatus.CALIFICADO,
+                intento: 1,
+              }
+            });
+            await prisma.grade.create({
+              data: {
+                submissionId: sub.id,
+                studentId: enr.studentId,
+                valor: "0",
+                retroalimentacion: "No se recibió entrega en la fecha estipulada."
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+
+  console.log("\n==========================================================");
+  console.log("¡Base de datos sembrada correctamente con datos congruentes!");
+  console.log("==========================================================");
+  console.log("Cuentas de prueba estáticas:");
+  console.log("----------------------------------------------------------");
+  console.log(`ADMINISTRADOR : Email: admin@utm.mx       | Contraseña: Password123`);
+  console.log(`PROFESOR      : Email: profesor@utm.mx    | Contraseña: Password123`);
+  console.log(`ALUMNO        : Email: alumno@gs.utm.mx   | Contraseña: Password123`);
+  console.log(`(Todas las cuentas aleatorias generadas usan Password123)`);
+  console.log("==========================================================");
+}
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
