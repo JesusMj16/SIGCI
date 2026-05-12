@@ -64,6 +64,17 @@ Archivos reales:
   - Salida → barra gruesa (join) → rectángulo: `return result {asignacionesCreadas, submissionsCreadas, notificacionesEnviadas}`.
 - Línea continua con flecha → rectángulo: `Render ConfirmacionPublicacion (n asignaciones, n submissions, n notificaciones)`. Línea continua con flecha → nodo final (círculo blanco con negro concéntrico).
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Profesor` contiene: nodo inicial, navegar a `/profesor/asignaciones/nueva`, selección de grupos, llenado de formulario (tipo, título, instrucciones, fechaLimite, rúbrica), elección modo BORRADOR|PUBLICAR, click "Guardar".
+- Pista `Page (profesor/asignaciones/nueva/page.tsx)` (Server Component) contiene: precarga vía `getGruposProfesorAction()`.
+- Pista `Cliente (_components)` contiene: `CrearAsignacionContainer`, `SelectorGrupos`, `FormularioAsignacion`, `ConfirmacionPublicacion`, hook `useCrearAsignacionFlow.ts`.
+- Pista `Server Actions (lib/actions/asignaciones.actions.ts)` contiene: `getGruposProfesorAction`, `crearAsignacionAction`, mapeo de excepciones tipadas → `errorCode (VALIDATION|DATE_INVALID|FORBIDDEN|PERIOD_CLOSED)`.
+- Pista `DAL Asignaciones (lib/dal/asignaciones.ts)` contiene: `validarInput` (título/instrucciones/groupIds/tipo/fechaLimite), ownership y rango de periodo por grupo, lanzamiento de `$transaction`, `notificarAlumnos` best-effort.
+- Pista `DAL Groups (lib/dal/groups.ts)` contiene: `obtenerGruposDelProfesor`.
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser(["PROFESOR"])`.
+- Pista `Prisma $transaction` contiene: región `«iterative»` con `tx.assignment.create` por grupo + `tx.submission.createMany({status:PENDIENTE, intento:1})` cuando modo `PUBLICAR`, commit atómico.
+- Pista `Prisma/PostgreSQL` contiene: `prisma.group.findMany` con `include:{period, enrollments}`, persistencia de `assignment` y `submission`.
+
 ---
 
 ## 2. Diagrama de Secuencia

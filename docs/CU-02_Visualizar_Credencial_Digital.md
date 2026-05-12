@@ -48,6 +48,14 @@ Flujo alternativo (descarga PNG) — región de expansión opcional:
 - Línea continua con flecha apuntando a barra gruesa (join). Línea continua con flecha al nodo final.
 - Figura: círculo blanco con círculo negro concéntrico (final).
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Usuario (Alumno/Profesor/...)` contiene: nodo inicial, "Usuario navega a /credencial", "Usuario presenta QR en punto de validación", "Click Descargar PNG".
+- Pista `Page (credencial/page.tsx)` (Server Component) contiene: `await auth()`, rombos `¿session?.user?.id?`, `¿status === "ACTIVO"?`, `¿res.ok?`, `¿tieneCredencial?`, `¿credencialActiva && qrData?`, render condicional de DashboardHero/SectionCard.
+- Pista `DAL (lib/dal/users.ts)` contiene: `obtenerCredencialPropia()` (server-only, cache()).
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser()`.
+- Pista `Prisma/PostgreSQL` contiene: `prisma.credential.findUnique({where:{userId:actor.id}})`.
+- Pista `Cliente (CredentialCard.tsx)` contiene: `QRCodeSVG renderiza SVG`, `Dynamic import("qrcode")`, `QRCode.toDataURL(qrData)`, rombo `¿toDataURL ok?`, `<a download>.click()`, fallback `Reintentar (renderKey++)`.
+
 ---
 
 ## 2. Diagrama de Secuencia

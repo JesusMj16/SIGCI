@@ -54,6 +54,16 @@ Archivos reales:
 
 Excepción "Tareas vencidas no se ocultan": observación gráfica — la rama `[vencida]` no elimina la tarea de la lista; se renderiza con chip estado "VENCIDA". Anotar como comentario (rectángulo de borde punteado) sobre el rectángulo `estado="VENCIDA"` con texto: `"No ocultar; permanecen visibles (regla CU-10 #4)"`.
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Alumno` contiene: nodo inicial, navegar a `/alumno/tareas`, filtrar por materia, cambiar orden, click sobre `TareaCard`, navegar a `/alumno/tareas/[assignmentId]`.
+- Pista `Page lista (alumno/tareas/page.tsx)` (Server Component) contiene: `await tieneInscripcionesActivas()`, `await getTareasPendientesAlumno()`, render `EmptyState` o `TareasPendientesList`.
+- Pista `Page detalle (alumno/tareas/[assignmentId]/page.tsx)` contiene: `await getTareaDetalleAlumno(assignmentId)`, `notFound()` cuando `code === "NOT_FOUND"`.
+- Pista `DAL (lib/dal/tareas/alumno.ts)` contiene: `tieneInscripcionesActivas`, `getTareasPendientesAlumno` (calcula `diasRestantes`, `calcularUrgencia`, estado `VENCIDA|PENDIENTE`, construcción de `TareaPendienteDTO`), `getTareaDetalleAlumno`.
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser(["ALUMNO"])` (memoizado con `cache()`).
+- Pista `Prisma/PostgreSQL` contiene: `prisma.enrollment.findFirst`, `prisma.submission.findMany` (filtros `PENDIENTE` + `PUBLICADO` + `period.isActive` + `enrollments.some(studentId)` + `orderBy:fechaLimite asc`), `prisma.submission.findFirst` para detalle.
+- Pista `Helpers (lib/dal/tareas/helpers.ts)` contiene: `filtrarPorMateria(tareas, materiaId)`, `ordenarTareas(tareas, criterio)` con criterios `fecha|materia|estado|tipo`.
+- Pista `Cliente (componentes)` contiene: `DashboardHero`, `TareasPendientesList` (estado de filtro/orden sin recargar), `TareaCard` (badge urgencia rojo/amarillo/verde + chip estado), `Link` a detalle.
+
 ---
 
 ## 2. Diagrama de Secuencia

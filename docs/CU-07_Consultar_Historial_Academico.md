@@ -42,6 +42,15 @@ Archivos reales (rama `historial_academico`):
 - Rombo (flujo alternativo): `¿usuario "Descargar Historial"?` — NO implementado en rama → marcar rectángulo borde discontinuo etiqueta `«future»` "Generar PDF" → nodo final.
 - Nodo final (círculo blanco con negro concéntrico).
 
+Pistas (swimlanes verticales) para particionar el diagrama:
+- Pista `Alumno` contiene: nodo inicial, navegar a `/alumno/historial`, filtrar por semestre, click "Descargar Historial".
+- Pista `Page (alumno/historial/page.tsx)` (Server Component) contiene: invocación de `getAuthenticatedUser`, query Prisma con `include` profundo, `calculateFinalGrade`, acumulación de créditos, cálculo de avance, render de `StatCard` y tabla por semestre.
+- Pista `DAL (lib/dal/academic_history.ts)` contiene: `getAcademicHistory(targetStudentId)`, ownership check (`isOwner || isStaff`).
+- Pista `Guard (lib/dal/session.ts)` contiene: `getAuthenticatedUser(["ALUMNO","ADMIN"])`.
+- Pista `Prisma/PostgreSQL` contiene: `prisma.user.findUnique` con `include` (`carreraRel`, `enrollments`, `group`, `subject`, `period`, `assignments`, `submissions`, `grade`), `orderBy: group.period.startDate desc`.
+- Pista `Presentación (lib/presentation/academic_history.ts)` contiene: helpers de presentación (estatus aprobada/reprobada/en curso, formato de promedio).
+- Pista `Cliente (componentes UI)` contiene: `StatCard` (AcademicCapIcon, ChartBarIcon), tabla por semestre con `BookOpenIcon`, `Alert` "Plan de estudios no encontrado", filtrado en cliente por `period.id`, rectángulo `«future»` "Generar PDF".
+
 ---
 
 ## 2. Diagrama de Secuencia
