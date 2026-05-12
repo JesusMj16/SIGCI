@@ -16,36 +16,34 @@ Archivos reales del flujo (repo):
 
 ## 1. Diagrama de Actividades
 
-- Figura: círculo negro pequeño (nodo inicial). Línea continua con flecha apuntando a la siguiente actividad.
-- Figura: rectángulo de bordes redondeados; texto interno: `Admin abre /admin/usuarios/nuevo`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo de bordes redondeados; texto: `Capturar matrícula, nombre, apellidos, email, contraseña, carrera, rol`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo de bordes redondeados; texto: `Sanitizar entrada en cliente (onlyDigits, onlyLetters, onlyEmailLocal)`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo de bordes redondeados; texto: `Click "Registrar y generar QR" — dispara Server Action crearUsuarioConCredencial`. Línea continua con flecha apuntando a un rombo.
-- Figura: rombo (decisión); texto: `¿Sesión y rol ∈ {ADMIN, COORDINADOR}?`.
-  - Línea continua con flecha rotulada `[no]` apuntando a rectángulo redondeado `redirect("/login") o redirect("/")`. Línea continua con flecha apuntando a círculo blanco con círculo negro concéntrico (nodo final).
-  - Línea continua con flecha rotulada `[sí]` apuntando a la siguiente actividad.
-- Figura: rectángulo de bordes redondeados; texto: `validarCampos(input) — datos completos + rol asignado`. Línea continua con flecha apuntando a un rombo.
-- Figura: rombo; texto: `¿val.ok?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo redondeado `return err(val.mensaje, val.code)`. Línea continua con flecha apuntando a actividad `Mostrar feedback "error" en form`. Línea continua con flecha al nodo final (círculo blanco con negro concéntrico).
-  - Línea continua con flecha `[sí]` apuntando a la siguiente actividad.
-- Figura: barra gruesa horizontal (fork de sincronización). Línea continua con flecha apuntando a la barra. De la barra salen dos líneas continuas con flecha hacia dos actividades concurrentes:
-  - Rectángulo redondeado: `bcrypt.hash(password, 10)`.
-  - Rectángulo redondeado: `Normalizar trim/lowercase de email`.
-- De ambas actividades sale línea continua con flecha hacia una segunda barra gruesa horizontal (join).
-- De la barra join sale línea continua con flecha hacia un rectángulo redondeado: `prisma.$transaction inicio`.
-- Línea continua con flecha apuntando a rectángulo redondeado: `tx.user.create({matricula, nombre, apellidos, email, passwordHash, carrera, role}) → user.id`.
-- Línea continua con flecha apuntando a rectángulo redondeado: `generarQrData(user.id) → "<userId>.<hmac SHA-256>"`.
-- Línea continua con flecha apuntando a rectángulo redondeado: `tx.credential.create({userId, qrData, isActive:true})`.
-- Línea continua con flecha apuntando a rombo: `¿catch P2002 (unique)?`.
-  - Línea continua con flecha `[sí target=email]` a rectángulo `return err("Email duplicado","DUPLICATE_EMAIL")`. Línea continua con flecha al final.
-  - Línea continua con flecha `[sí target=matricula]` a rectángulo `return err("Matrícula duplicada","DUPLICATE_MATRICULA")`. Línea continua con flecha al final.
-  - Línea continua con flecha `[sí target=userId]` a rectángulo `return err("Credencial activa existente","DUPLICATE_CREDENTIAL")`. Línea continua con flecha al final.
-  - Línea continua con flecha `[no]` a la siguiente actividad.
-- Figura: rectángulo redondeado; texto: `notifyUser(actor.id, "Credencial generada", mensaje)` (auditoría, no bloquea). Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo con lado saliente de ángulo convexo (señal/evento emitido); texto: `revalidatePath("/admin/usuarios")`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo redondeado; texto: `return ok({userId, credentialId, qrData})`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo redondeado; texto: `setFeedback({kind:"success"}) + router.push("/admin/usuarios")`. Línea continua con flecha al nodo final.
-- Figura: círculo blanco con círculo negro concéntrico (nodo final).
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Admin abre /admin/usuarios/nuevo y captura matrícula, nombre, apellidos, email, password, carrera, rol`.
+- Rectángulo redondeado: `Sanitizar en cliente (onlyDigits, onlyLetters, onlyEmailLocal) y click "Registrar y generar QR" → Server Action crearUsuarioConCredencial`.
+- Rombo `¿Sesión y rol ∈ {ADMIN, COORDINADOR}?`:
+  - `[no]` → rectángulo `redirect("/login" | "/")` → nodo final.
+  - `[sí]` → siguiente.
+- Rectángulo: `validarCampos(input) — datos completos + rol asignado`.
+- Rombo `¿val.ok?`:
+  - `[no]` → rectángulo `return err(val.mensaje, val.code) + feedback "error" en form` → nodo final.
+  - `[sí]` → siguiente.
+- Barra gruesa (fork) → dos actividades concurrentes:
+  - Rectángulo: `bcrypt.hash(password, 10)`.
+  - Rectángulo: `trim + email.toLowerCase`.
+- Barra gruesa (join) → rectángulo: `prisma.$transaction inicio`.
+- Rectángulo: `tx.user.create({matricula, nombre, apellidos, email, passwordHash, carrera, role}) → user.id`.
+- Rectángulo: `generarQrData(user.id) → "<userId>.<hmac SHA-256>"`.
+- Rectángulo: `tx.credential.create({userId, qrData, isActive:true})`.
+- Rombo `¿catch P2002 unique?`:
+  - `[target=email]` → rectángulo `err("Email duplicado","DUPLICATE_EMAIL")` → final.
+  - `[target=matricula]` → rectángulo `err("Matrícula duplicada","DUPLICATE_MATRICULA")` → final.
+  - `[target=userId]` → rectángulo `err("Credencial activa existente","DUPLICATE_CREDENTIAL")` → final.
+  - `[no]` → siguiente.
+- Rectángulo: `notifyUser(actor.id, "Credencial generada", mensaje)` (auditoría, no bloquea).
+- Rectángulo con lado saliente convexo (evento emitido): `revalidatePath("/admin/usuarios")`.
+- Rectángulo: `return ok({userId, credentialId, qrData}) + setFeedback success + router.push("/admin/usuarios")`.
+- Nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) opcionales para particionar:
 - Pista `Administrador` contiene: nodo inicial, capturar datos, click registrar.

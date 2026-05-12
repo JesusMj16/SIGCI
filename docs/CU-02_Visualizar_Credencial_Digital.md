@@ -14,39 +14,34 @@ Archivos reales del flujo:
 
 ## 1. Diagrama de Actividades
 
-- Figura: círculo negro (inicio). Línea continua con flecha apuntando a la siguiente actividad.
-- Figura: rectángulo redondeado; texto: `Usuario navega a /credencial`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo redondeado; texto: `Page.tsx: await auth()`. Línea continua con flecha apuntando a un rombo.
-- Figura: rombo (decisión); texto: `¿session?.user?.id?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo redondeado `redirect("/login")`. Línea continua con flecha al nodo final.
-  - Línea continua con flecha `[sí]` apuntando al siguiente rombo.
-- Figura: rombo; texto: `¿session.user.status === "ACTIVO"?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo redondeado `Render DashboardHero "Credencial no disponible" + SectionCard "Estatus inactivo"`. Línea continua con flecha al nodo final.
-  - Línea continua con flecha `[sí]` apuntando a la siguiente actividad.
-- Figura: rectángulo redondeado; texto: `await obtenerCredencialPropia()` (DAL, server-only, cache()).
-- Línea continua con flecha apuntando a un rombo; texto: `¿res.ok?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo redondeado `Render hero "No se pudo cargar" + error res.error`. Línea continua con flecha al nodo final.
-  - Línea continua con flecha `[sí]` apuntando al siguiente rombo.
-- Figura: rombo; texto: `¿tieneCredencial?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo `Render "Aún no tienes una credencial"`. Línea continua con flecha al nodo final.
-  - Línea continua con flecha `[sí]` apuntando al siguiente rombo.
-- Figura: rombo; texto: `¿credencialActiva && qrData?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo `Render "Credencial revocada"`. Línea continua con flecha al nodo final.
-  - Línea continua con flecha `[sí]` apuntando a la siguiente actividad.
-- Figura: rectángulo redondeado; texto: `Render <CredentialCard qrData nombre matricula expiresAt />`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo redondeado; texto: `QRCodeSVG renderiza SVG con qrData`. Línea continua con flecha apuntando a la siguiente.
-- Figura: rectángulo redondeado; texto: `Usuario presenta QR en punto de validación`.
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
 
-Flujo alternativo (descarga PNG) — región de expansión opcional:
-- Figura: barra gruesa (fork). Línea continua con flecha desde "QRCodeSVG renderiza SVG".
-- Línea continua con flecha apuntando a rectángulo redondeado: `Click "Descargar PNG"`.
-- Línea continua con flecha apuntando a rectángulo redondeado: `Dynamic import("qrcode")`.
-- Línea continua con flecha apuntando a rectángulo redondeado: `QRCode.toDataURL(qrData) → dataURL`.
-- Línea continua con flecha apuntando a un rombo; texto: `¿toDataURL ok?`.
-  - Línea continua con flecha `[no]` apuntando a rectángulo `Mostrar "Reintentar" (renderKey++)`. Línea continua con flecha de vuelta al rectángulo "Click Descargar PNG".
-  - Línea continua con flecha `[sí]` apuntando a rectángulo `<a download="credencial.png" href=dataURL>.click()`.
-- Línea continua con flecha apuntando a barra gruesa (join). Línea continua con flecha al nodo final.
-- Figura: círculo blanco con círculo negro concéntrico (final).
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Usuario navega a /credencial; page.tsx ejecuta await auth()`.
+- Rombo `¿session?.user?.id?`:
+  - `[no]` → rectángulo `redirect("/login")` → nodo final.
+  - `[sí]` → siguiente.
+- Rombo `¿session.user.status === "ACTIVO"?`:
+  - `[no]` → rectángulo `Render DashboardHero "Credencial no disponible" + SectionCard "Estatus inactivo"` → nodo final.
+  - `[sí]` → siguiente.
+- Rectángulo: `await obtenerCredencialPropia()` (DAL, server-only, cache()).
+- Rombo `¿res.ok?`:
+  - `[no]` → rectángulo `Render hero "No se pudo cargar" + error res.error` → nodo final.
+  - `[sí]` → siguiente.
+- Rombo `¿tieneCredencial?`:
+  - `[no]` → rectángulo `Render "Aún no tienes una credencial"` → nodo final.
+  - `[sí]` → siguiente.
+- Rombo `¿credencialActiva && qrData?`:
+  - `[no]` → rectángulo `Render "Credencial revocada"` → nodo final.
+  - `[sí]` → siguiente.
+- Rectángulo: `Render <CredentialCard qrData nombre matricula expiresAt /> → QRCodeSVG renderiza SVG → Usuario presenta QR en punto de validación`.
+
+Flujo alternativo (descarga PNG) — región opcional desde "QRCodeSVG renderiza SVG":
+- Barra gruesa (fork) → rectángulo `Click "Descargar PNG" → Dynamic import("qrcode") → QRCode.toDataURL(qrData) → dataURL`.
+- Rombo `¿toDataURL ok?`:
+  - `[no]` → rectángulo `Mostrar "Reintentar" (renderKey++)` → vuelta al rectángulo "Click Descargar PNG".
+  - `[sí]` → rectángulo `<a download="credencial.png" href=dataURL>.click()`.
+- Barra gruesa (join) → nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Usuario (Alumno/Profesor/...)` contiene: nodo inicial, "Usuario navega a /credencial", "Usuario presenta QR en punto de validación", "Click Descargar PNG".

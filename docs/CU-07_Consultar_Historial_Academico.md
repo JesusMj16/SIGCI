@@ -14,33 +14,34 @@ Archivos reales (rama `historial_academico`):
 
 ## 1. Diagrama de Actividades
 
-- Círculo negro (inicio) → línea continua con flecha → siguiente.
-- Rectángulo redondeado: `Alumno navega a /alumno/historial`. Línea continua con flecha → siguiente.
-- Rectángulo: `getAuthenticatedUser(["ALUMNO","ADMIN"]) → userSession`. Línea continua con flecha → rombo.
-- Rombo: `¿targetStudentId === userSession.id OR rol ∈ {ADMIN, SERVICIOS_ESCOLARES}?` (DAL check).
-  - `[no]` → rectángulo `throw Error("No tienes permiso para ver este historial.")` → render error → nodo final.
+Convención: conexiones por defecto = línea continua con flecha al siguiente nodo. Solo se especifica el tipo cuando difiere.
+
+- Círculo negro (inicio).
+- Rectángulo redondeado: `Alumno navega a /alumno/historial; getAuthenticatedUser(["ALUMNO","ADMIN"]) → userSession`.
+- Rombo `¿targetStudentId === userSession.id OR rol ∈ {ADMIN, SERVICIOS_ESCOLARES}?` (DAL check):
+  - `[no]` → rectángulo `throw Error("No tienes permiso para ver este historial.") → render error` → nodo final.
   - `[sí]` → siguiente.
-- Rectángulo: `prisma.user.findUnique({id:userSession.id, include:{carreraRel, enrollments:{include:{group:{subject, period, assignments:{include:{submissions(studentId).grade}}}}}, orderBy: group.period.startDate desc}})`. Línea continua con flecha → rombo.
-- Rombo: `¿user.enrollments.length === 0?`.
+- Rectángulo: `prisma.user.findUnique({id, include:{carreraRel, enrollments:{include:{group:{subject, period, assignments:{include:{submissions(studentId).grade}}}}}, orderBy: group.period.startDate desc}})`.
+- Rombo `¿user.enrollments.length === 0?`:
   - `[sí]` → rectángulo `Render "Aún no cuentas con historial académico registrado."` → nodo final.
   - `[no]` → siguiente.
-- Región de expansión etiqueta `«iterative»` sobre `enrollments`:
-  - Rectángulo: `allSubmissions = enrollment.group.assignments.flatMap(a ⇒ a.submissions)`.
-  - Rectángulo: `grades = allSubmissions.map(s ⇒ s.grade?.valor).filter(v !== null)`.
-  - Rombo: `¿grades.length === 0?`.
-    - `[sí]` → rectángulo `finalGrade = null → mostrar "Calificación pendiente"`.
-    - `[no]` → rectángulo `finalGrade = Number((sum/grades.length).toFixed(1))`.
-  - Rectángulo: `Determinar estatus: aprobada (≥7) | reprobada (<7) | en curso (finalGrade==null && period.isActive)`.
-- Salida → rectángulo: `acumular créditos sólo con materias aprobadas`. Línea continua con flecha → siguiente.
-- Rombo: `¿user.carreraRel disponible?`.
-  - `[no]` → rectángulo `avance = N/A (mensaje "Plan de estudios no encontrado")`.
-  - `[sí]` → rectángulo `avance = (créditosAcumulados / carreraRel.creditosTotales) * 100`.
-- (Convergen) → rectángulo: `Agrupar por period.startDate desc (orderBy ya aplicado)`. Línea continua con flecha → siguiente.
-- Rectángulo: `Render <StatCard AcademicCapIcon créditos>, <StatCard ChartBarIcon avance>, tabla por semestre con BookOpenIcon, diferenciación visual aprobada/reprobada`. Línea continua con flecha → siguiente.
-- Rombo (flujo alternativo): `¿usuario filtra por semestre?`.
-  - `[sí]` → rectángulo `Filtrar enrollments por period.id en cliente` → vuelta a render.
-- Rombo (flujo alternativo): `¿usuario "Descargar Historial"?` — NO implementado en rama → marcar rectángulo borde discontinuo etiqueta `«future»` "Generar PDF" → nodo final.
-- Nodo final (círculo blanco con negro concéntrico).
+- Región de expansión `«iterative»` sobre `enrollments`:
+  - Rectángulo: `allSubmissions = enrollment.group.assignments.flatMap(a ⇒ a.submissions); grades = allSubmissions.map(s ⇒ s.grade?.valor).filter(v !== null)`.
+  - Rombo `¿grades.length === 0?`:
+    - `[sí]` → `finalGrade = null → "Calificación pendiente"`.
+    - `[no]` → `finalGrade = Number((sum/grades.length).toFixed(1))`.
+  - Rectángulo: `Estatus: aprobada (≥7) | reprobada (<7) | en curso (finalGrade==null && period.isActive)`.
+- Rectángulo: `acumular créditos sólo con materias aprobadas`.
+- Rombo `¿user.carreraRel disponible?`:
+  - `[no]` → `avance = N/A (mensaje "Plan de estudios no encontrado")`.
+  - `[sí]` → `avance = (créditosAcumulados / carreraRel.creditosTotales) * 100`.
+- Rectángulo: `Agrupar por period.startDate desc → Render <StatCard AcademicCapIcon créditos>, <StatCard ChartBarIcon avance>, tabla por semestre BookOpenIcon, diferenciación visual aprobada/reprobada`.
+- Rombo (flujo alternativo) `¿usuario filtra por semestre?`:
+  - `[sí]` → `Filtrar enrollments por period.id en cliente` → vuelta a render.
+  - `[no]` → siguiente.
+- Rombo (flujo alternativo) `¿usuario "Descargar Historial"?` — NO implementado:
+  - `[sí]` → rectángulo borde discontinuo `«future» Generar PDF` → nodo final.
+  - `[no]` → nodo final (círculo blanco con negro concéntrico).
 
 Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Alumno` contiene: nodo inicial, navegar a `/alumno/historial`, filtrar por semestre, click "Descargar Historial".
