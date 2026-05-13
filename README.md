@@ -21,16 +21,16 @@ El resultado es una herramienta cotidiana, rápida y predecible: el alumno entra
 
 ## Funcionalidad cubierta con los casos de uso implementados:
 
-| CU    | Funcionalidad                                     |
-| ----- | ------------------------------------------------- |
-| CU-01 | Generar credencial digital                        |
-| CU-02 | Visualizar credencial digital (QR + descarga PNG) |
-| CU-04 | Consultar calificaciones (alumno)                 |
-| CU-05 | Registrar calificaciones (profesor)               |
-| CU-06 | Consultar horario de clases (+ exportar ICS)      |
-| CU-07 | Consultar historial académico                     |
-| CU-09 | Crear y publicar asignaciones                     |
-| CU-10 | Visualizar tareas pendientes (alumno)             |
+| CU    | Funcionalidad                                                                                                                      |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| CU-01 | Generar credencial digital                                                                                                         |
+| CU-02 | Visualizar credencial digital con el QR y la opcion para descargar en formato PNG                                                  |
+| CU-04 | Consultar calificaciones para el rol **ALUMNO**                                                                                    |
+| CU-05 | Registrar calificaciones para el rol **PROFESOR**                                                                                  |
+| CU-06 | Consultar horario de clases con la exportacion del fromato .ics para que el usuario tenga la facilidad de añadirlo a su calendario |
+| CU-07 | Consultar historial académico                                                                                                      |
+| CU-09 | Crear y publicar asignaciones                                                                                                      |
+| CU-10 | Visualizar tareas pendientes                                                                                                       |
 
 ---
 
@@ -86,7 +86,7 @@ volumes:
   postgres_data:
 ```
 
-## c) Imágenes ilustrativas
+## Imágenes ilustrativas
 
 ### Pantalla de login
 
@@ -120,8 +120,6 @@ volumes:
 
 ![Admin](docs/screenshots/admin.png)
 
----
-
 ## Entrega presencial
 
 | Integrante  
@@ -135,6 +133,7 @@ volumes:
 ### Requisitos para correr el software localmente
 
 **Pre-requisitos:**
+Estos son algunos requistios de tecnologias que deberias tomar en cuenta para el despliegue:
 
 - Node.js ≥ 20
 - npm ≥ 10
@@ -164,7 +163,7 @@ cp .env.example .env.local
 npx prisma migrate deploy
 npx prisma generate
 
-# 6. Cargar datos de prueba (seed)
+# 6. Cargar datos de prueba con la semilla
 npm run db:seed
 
 # 7. Iniciar servidor de desarrollo
@@ -180,8 +179,8 @@ npm run dev              # Servidor de desarrollo (hot reload)
 npm run build            # Build de producción
 npm run start            # Servidor de producción
 npm run lint             # ESLint
-npm run test             # Tests unitarios (Vitest)
-npm run test:e2e         # Tests E2E (Playwright)
+npm run test             # Tests unitarios
+npm run test:e2e         # Tests E2E usando PalyWrigth
 npm run db:seed          # Recargar datos de prueba
 docker compose up -d     # Levantar PostgreSQL
 docker compose down      # Detener PostgreSQL (datos persisten)
