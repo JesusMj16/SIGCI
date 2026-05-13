@@ -1,6 +1,7 @@
 # CU-10 — Visualizar Tareas Pendientes — Guía de Dibujo UML
 
 Archivos reales:
+
 - Página: `app/(dashboard)/alumno/tareas/page.tsx`
 - Detalle: `app/(dashboard)/alumno/tareas/[assignmentId]/page.tsx`
 - DAL: `lib/dal/tareas/alumno.ts` (`getTareasPendientesAlumno`, `getTareaDetalleAlumno`, `tieneInscripcionesActivas`, `calcularUrgencia`)
@@ -47,8 +48,7 @@ Convención: conexiones por defecto = línea continua con flecha al siguiente no
     - `[ok]` → `Render detalle: instrucciones + rubrica + fecha` → final.
   - `[no acción]` → nodo final.
 - Nodo final (círculo blanco con negro concéntrico).
-
-Pistas (swimlanes verticales) para particionar el diagrama:
+  Pistas (swimlanes verticales) para particionar el diagrama:
 - Pista `Alumno` contiene: nodo inicial, navegar a `/alumno/tareas`, filtrar por materia, cambiar orden, click sobre `TareaCard`, navegar a `/alumno/tareas/[assignmentId]`.
 - Pista `Page lista (alumno/tareas/page.tsx)` (Server Component) contiene: `await tieneInscripcionesActivas()`, `await getTareasPendientesAlumno()`, render `EmptyState` o `TareasPendientesList`.
 - Pista `Page detalle (alumno/tareas/[assignmentId]/page.tsx)` contiene: `await getTareaDetalleAlumno(assignmentId)`, `notFound()` cuando `code === "NOT_FOUND"`.
@@ -63,6 +63,7 @@ Pistas (swimlanes verticales) para particionar el diagrama:
 ## 2. Diagrama de Secuencia
 
 Líneas de vida:
+
 - `alumno:Alumno`
 - `page:alumno/tareas/page.tsx`
 - `dal:tareas/alumno.ts`
@@ -96,33 +97,41 @@ Mensajes:
 16. `page:alumno/tareas/page.tsx` → `hero:DashboardHero.tsx` flecha rellena; `render "Tareas pendientes" + meta Total`.
 17. `page:alumno/tareas/page.tsx` → `lista:TareasPendientesList.tsx` flecha rellena; `props {tareas}`.
 18. Loop `[por cada tarea]`:
-   - `lista:TareasPendientesList.tsx` → `card:TareaCard.tsx` flecha rellena; `render con badge urgencia + chip estado`.
+
+- `lista:TareasPendientesList.tsx` → `card:TareaCard.tsx` flecha rellena; `render con badge urgencia + chip estado`.
+
 19. `card:TareaCard.tsx` → `alumno:Alumno` flecha abierta punteada; `vista de la tarjeta`.
 20. Fragmento `opt` `[Usuario filtra por materia]`:
-   - `alumno:Alumno` → `lista:TareasPendientesList.tsx` flecha rellena; `onFilter(materiaId)`.
-   - `lista:TareasPendientesList.tsx` → `helpers:tareas/helpers.ts` flecha rellena; `filtrarPorMateria(tareas, materiaId)`.
-   - `helpers:tareas/helpers.ts` → `lista:TareasPendientesList.tsx` flecha abierta punteada; `TareaPendienteDTO[] filtradas`.
-   Cierre.
+
+- `alumno:Alumno` → `lista:TareasPendientesList.tsx` flecha rellena; `onFilter(materiaId)`.
+- `lista:TareasPendientesList.tsx` → `helpers:tareas/helpers.ts` flecha rellena; `filtrarPorMateria(tareas, materiaId)`.
+- `helpers:tareas/helpers.ts` → `lista:TareasPendientesList.tsx` flecha abierta punteada; `TareaPendienteDTO[] filtradas`.
+  Cierre.
+
 21. Fragmento `opt` `[Usuario cambia orden]`:
-   - `alumno:Alumno` → `lista:TareasPendientesList.tsx` flecha rellena; `onSort(criterio)`.
-   - `lista:TareasPendientesList.tsx` → `helpers:tareas/helpers.ts` flecha rellena; `ordenarTareas(tareas, "fecha"|"materia"|"estado"|"tipo")`.
-   - `helpers:tareas/helpers.ts` → `lista:TareasPendientesList.tsx` flecha abierta punteada; `TareaPendienteDTO[] ordenadas`.
-   Cierre.
+
+- `alumno:Alumno` → `lista:TareasPendientesList.tsx` flecha rellena; `onSort(criterio)`.
+- `lista:TareasPendientesList.tsx` → `helpers:tareas/helpers.ts` flecha rellena; `ordenarTareas(tareas, "fecha"|"materia"|"estado"|"tipo")`.
+- `helpers:tareas/helpers.ts` → `lista:TareasPendientesList.tsx` flecha abierta punteada; `TareaPendienteDTO[] ordenadas`.
+  Cierre.
+
 22. Fragmento `opt` `[Usuario click TareaCard]`:
-   - `alumno:Alumno` → `card:TareaCard.tsx` flecha rellena; `click Link /alumno/tareas/[assignmentId]`.
-   - `card:TareaCard.tsx` → `detail:alumno/tareas/[assignmentId]/page.tsx` flecha rellena (mensaje encontrado si la sesión expira: línea continua con flecha y círculo relleno al final); `navegación`.
-   - `detail:alumno/tareas/[assignmentId]/page.tsx` → `dal:tareas/alumno.ts` flecha rellena; `getTareaDetalleAlumno(assignmentId)`.
-   - `dal:tareas/alumno.ts` → `db:PostgreSQL` flecha rellena; `prisma.submission.findFirst({studentId, assignmentId, assignment.status:"PUBLICADO", group.enrollments.some(studentId)}, include:{assignment.group.subject})`.
-   - `db:PostgreSQL` → `dal:tareas/alumno.ts` flecha abierta punteada; `submission | null`.
-   - Fragmento `alt` `[!submission]`: `dal` → `detail` flecha abierta punteada `err("Tarea no encontrada","NOT_FOUND")`. `detail` → `alumno` flecha abierta punteada `notFound()` (404). Cierre.
-   - `dal:tareas/alumno.ts` → `detail:alumno/tareas/[assignmentId]/page.tsx` flecha abierta punteada; `ok(TareaDetalleDTO{...instrucciones, rubrica})`.
-   - `detail:alumno/tareas/[assignmentId]/page.tsx` → `alumno:Alumno` flecha abierta punteada; `render hero + instrucciones + rubrica + fecha`.
+
+- `alumno:Alumno` → `card:TareaCard.tsx` flecha rellena; `click Link /alumno/tareas/[assignmentId]`.
+- `card:TareaCard.tsx` → `detail:alumno/tareas/[assignmentId]/page.tsx` flecha rellena (mensaje encontrado si la sesión expira: línea continua con flecha y círculo relleno al final); `navegación`.
+- `detail:alumno/tareas/[assignmentId]/page.tsx` → `dal:tareas/alumno.ts` flecha rellena; `getTareaDetalleAlumno(assignmentId)`.
+- `dal:tareas/alumno.ts` → `db:PostgreSQL` flecha rellena; `prisma.submission.findFirst({studentId, assignmentId, assignment.status:"PUBLICADO", group.enrollments.some(studentId)}, include:{assignment.group.subject})`.
+- `db:PostgreSQL` → `dal:tareas/alumno.ts` flecha abierta punteada; `submission | null`.
+- Fragmento `alt` `[!submission]`: `dal` → `detail` flecha abierta punteada `err("Tarea no encontrada","NOT_FOUND")`. `detail` → `alumno` flecha abierta punteada `notFound()` (404). Cierre.
+- `dal:tareas/alumno.ts` → `detail:alumno/tareas/[assignmentId]/page.tsx` flecha abierta punteada; `ok(TareaDetalleDTO{...instrucciones, rubrica})`.
+- `detail:alumno/tareas/[assignmentId]/page.tsx` → `alumno:Alumno` flecha abierta punteada; `render hero + instrucciones + rubrica + fecha`.
 
 ---
 
 ## 3. Diagrama de Paquetes
 
 Paquetes:
+
 - `app/(dashboard)/alumno/tareas` con `page.tsx` y subcarpeta `[assignmentId]` con `page.tsx`.
 - `lib/dal/tareas` con `alumno.ts`, `helpers.ts`.
 - `lib/dal` con `session.ts`.
@@ -136,6 +145,7 @@ Paquetes:
 - Paquete externo `next/navigation` con `notFound`.
 
 Relaciones:
+
 - `alumno/tareas/page.tsx` —`«import»` línea punteada flecha abierta→ `tareas/alumno.ts (getTareasPendientesAlumno, tieneInscripcionesActivas)`, `TareasPendientesList.tsx`, `DashboardHero.tsx`, `ClipboardDocumentListIcon`.
 - `alumno/tareas/[assignmentId]/page.tsx` —`«import»` línea punteada flecha abierta→ `tareas/alumno.ts (getTareaDetalleAlumno)`, `DashboardHero.tsx`, `next/navigation::notFound`.
 - `TareasPendientesList.tsx` —`«import»` línea punteada flecha abierta→ `TareaCard.tsx`, `helpers.ts`.
