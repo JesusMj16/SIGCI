@@ -66,7 +66,17 @@ Credenciales digitales se generan con **qrcode**, y para asegurarnos de que nada
 
 ### Arquitectura de contenedores
 
-El proyecto utiliza **Docker Compose** para orquestar la base de datos:
+Elegimos **Docker Compose** para correr PostgreSQL porque queríamos que cualquiera del equipo levantara la base con un solo comando, sin pelearse con instalaciones locales ni versiones distintas entre Windows, Linux y Mac. Todos trabajamos contra el mismo Postgres 16, mismas credenciales, mismo puerto.
+
+Usamos la imagen `postgres:16-alpine` porque pesa poco y arranca rápido. El `restart: unless-stopped` lo pusimos para que la base se vuelva a prender sola si la máquina se reinicia, sin tener que acordarnos de levantarla a mano.
+
+Las credenciales (`utm_user`, `utmx`, base `utm`) viven en el `compose` para entorno de desarrollo. Sabemos que no es lo ideal para producción, pero acá nos sirve para que el `.env` de Prisma apunte siempre al mismo lado y nadie pierda tiempo configurando.
+
+Definimos el volumen `postgres_data` aparte del contenedor a propósito: si borramos o recreamos el contenedor (cosa que pasa seguido cuando probamos migraciones), los datos del seed y las pruebas no se van con él. Solo se pierden si borramos el volumen explícitamente.
+
+Dejamos el puerto `5432` mapeado al host para poder conectarnos desde Prisma Studio, DBeaver o el cliente que cada quien use, sin tener que entrar al contenedor.
+
+La app de Next.js no la metimos en el `compose`. La corremos con `npm run dev` afuera porque durante desarrollo necesitamos hot reload y logs directos en la terminal. En despliegue eso cambia, pero la base sí queda contenedorizada igual.
 
 ```yaml
 services:
