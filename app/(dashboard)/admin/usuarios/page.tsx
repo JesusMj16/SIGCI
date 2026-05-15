@@ -9,7 +9,7 @@ import { ROLE_LABEL } from "@/lib/presentation/user-display";
 import { ReactivarUsuarioButton } from "./reactivar-button";
 
 export default async function AdminUsuariosPage() {
-  // Guard doble (DAL + proxy). La DAL ya fuerza ADMIN|COORDINADOR.
+
   const result = await obtenerUsuariosAdmin();
 
   return (
