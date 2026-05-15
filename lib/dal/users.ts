@@ -22,22 +22,9 @@ export type {
   CredencialPropiaDTO,
 };
 
-/**
- * CU-01 — Generar Credencial Digital
- *
- * Flujo oficial:
- *  1. ADMIN/COORDINADOR captura datos personales completos.
- *  2. Asigna rol.
- *  3. Confirma alta con estatus ACTIVO.
- *  4. Sistema valida datos completos + rol + estatus.
- *  5. Sistema genera QR único asociado al userId.
- *  6. Sistema persiste el QR en BD vinculado al perfil (transacción atómica).
- *  7. Sistema confirma al administrador.
- *  8. El QR queda disponible en el perfil.
- */
 
 function mapPrismaError(e: unknown): Result<never> {
-  // Prisma known errors llegan como objetos con `code`.
+
   const code =
     typeof e === "object" && e !== null && "code" in e
       ? String((e as { code: unknown }).code)
@@ -48,7 +35,7 @@ function mapPrismaError(e: unknown): Result<never> {
       : undefined;
 
   if (code === "P2002") {
-    // Unique constraint
+
     const target = Array.isArray(meta?.target)
       ? meta?.target.join(",")
       : meta?.target ?? "";

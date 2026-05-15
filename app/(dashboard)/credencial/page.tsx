@@ -5,31 +5,6 @@ import { DashboardHero } from "@/components/dashboard/DashboardHero";
 import { SectionCard } from "@/components/dashboard/SectionCard";
 import { CredentialCard } from "@/components/credential/CredentialCard";
 
-/**
- * CU-02 — Visualizar Credencial Digital Personal.
- *
- * Flujo oficial (docs/Plan-Convergencia/GUIA-IMPLEMENTACION-CU-DETALLADA.md §CU-02):
- *   1. Usuario inicia sesión.
- *   2. Navega a "Ver Credencial Digital".
- *   3. El sistema verifica estatus ACTIVO del usuario.
- *   4. Recupera el QR ligado al usuario (sin recibir userId externo).
- *   5. Muestra el QR en pantalla con tamaño adecuado.
- *   6. El usuario lo presenta en el punto de validación.
- *
- * Flujo alternativo: descarga del QR como PNG (delegado al componente cliente).
- * Excepciones cubiertas:
- *   - Credencial no encontrada.
- *   - Estatus inactivo.
- *   - Credencial revocada (isActive=false).
- *   - Error de lectura en BD (Result.err).
- *
- * Aislamiento (regla de negocio crítica):
- *   La lectura viene de `obtenerCredencialPropia()`, que resuelve el userId
- *   desde la sesión. La page NO recibe userId por query params ni por props,
- *   por lo que ningún usuario puede ver la credencial de otro manipulando la
- *   URL.
- */
-
 const DATE_FMT = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
   month: "long",
@@ -37,15 +12,13 @@ const DATE_FMT = new Intl.DateTimeFormat("es-MX", {
 });
 
 export default async function CredencialPage() {
-  // Paso 1: asegurar sesión (defensa en profundidad; el proxy ya redirige).
+
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
   const nombreCompleto = session.user.name ?? "Usuario";
   const matricula = session.user.matricula ?? "—";
 
-  // Paso 3: verificar estatus ACTIVO. El login ya rechaza cuentas inactivas,
-  // pero el estatus puede cambiar mientras la sesión sigue viva.
   if (session.user.status !== "ACTIVO") {
     return (
       <div className="flex flex-col gap-8">
@@ -73,7 +46,7 @@ export default async function CredencialPage() {
     );
   }
 
-  // Paso 4: recuperar credencial propia (DAL con guard de sesión).
+  // Paso 4: recuperar credencial propia 
   const res = await obtenerCredencialPropia();
 
   if (!res.ok) {
@@ -121,8 +94,7 @@ export default async function CredencialPage() {
     );
   }
 
-  // Excepción: credencial revocada (isActive=false) — la DAL no expone qrData
-  // en este caso, aislando el secreto.
+  // Excepción: credencial revocada 
   if (!credencialActiva || !qrData) {
     return (
       <div className="flex flex-col gap-8">
